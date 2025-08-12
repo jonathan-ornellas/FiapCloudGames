@@ -1,11 +1,6 @@
 ﻿using Fiap.Game.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Fiap.Game.Infra.Data.EntityConfig
 {
@@ -14,8 +9,8 @@ namespace Fiap.Game.Infra.Data.EntityConfig
         public void Configure(EntityTypeBuilder<LibraryItem> b)
         {
             b.ToTable("Library");
-            b.HasKey(x => new { x.UserId});
-            b.HasIndex(x => new { x.UserId, x.GameId }).IsUnique();
+            b.HasKey(x => new { x.UserId, x.GameId });
+            b.HasIndex(x => x.UserId);
 
             b.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
             b.HasOne<Domain.Entities.Game>().WithMany().HasForeignKey(x => x.GameId).OnDelete(DeleteBehavior.Cascade);
