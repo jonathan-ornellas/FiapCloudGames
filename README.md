@@ -107,9 +107,6 @@ dotnet test
 ## 📚 Documentação Adicional
 
 - **[Guia de Execução Detalhado](GUIA_EXECUCAO.md)** - Instruções completas
-- **[Relatório Técnico](src/RELATORIO_TECNICO.md)** - Arquitetura e decisões
-- **[Event Storming](src/EVENT_STORMING.md)** - Modelagem de domínio
-- **[Roteiro de Vídeo](src/ROTEIRO_VIDEO.md)** - Apresentação do projeto
 
 ## 🔧 Comandos Úteis
 
