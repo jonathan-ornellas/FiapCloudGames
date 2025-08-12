@@ -37,7 +37,6 @@ Acesse: http://localhost:8080/swagger
 
 ### ✅ Implementadas
 - **Autenticação JWT** - Registro, login, perfil
-- **Gestão de Jogos** - CRUD completo com níveis de acesso
 - **Biblioteca Pessoal** - Visualização de jogos do usuário
 - **Validações Robustas** - Email, senha segura, dados obrigatórios
 - **Arquitetura DDD** - Domain, Business, Infrastructure
