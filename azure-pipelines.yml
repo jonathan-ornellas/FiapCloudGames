@@ -5,7 +5,7 @@ pr:
 
 variables:
   buildConfiguration: 'Release'
-  releaseBranchName: 'master'
+  releaseBranchName: '*'
   dotnetSdkVersion: '8.x'
   wwwrootDir: 'Tailspin.SpaceGame.Web/wwwroot'
 
