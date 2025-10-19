@@ -64,8 +64,13 @@ stages:
         PathtoPublish: '$(Build.ArtifactStagingDirectory)'
         ArtifactName: 'drop'
 
-    - download: current
-      artifact: drop
+    - task: DownloadBuildArtifacts@1
+      displayName: 'Download Artifact'
+      inputs:
+        buildType: 'current'
+        downloadType: 'single'
+        artifactName: 'drop'
+        downloadPath: '$(Pipeline.Workspace)'
 
     - script: |
        echo o deploy em Produção foi executado com sucesso
