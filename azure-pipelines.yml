@@ -32,6 +32,9 @@ stages:
       inputs:
         packageType: 'sdk'
         version: '$(dotnetSdkVersion)'
+
+    - script: ls -R
+      displayName: 'Listar arquivos no repositório'
     
     - task: DotNetCoreCLI@2
       displayName: 'Restore solution'
