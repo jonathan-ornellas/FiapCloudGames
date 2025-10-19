@@ -1,0 +1,81 @@
+trigger:
+      - master
+
+variables:
+  buildConfiguration: 'Release'
+  dotnetSdkVersion: '8.x'
+  vmImage: 'ubuntu-latest'
+  
+  solution: 'Fiap.Game.sln'
+  projectApi: 'Fiap.Game.Api/Fiap.Game.Api.csproj'
+  projectTest: 'Fiap.Game.Tests/Fiap.Game.Tests.csproj' 
+
+stages:
+- stage: 'Build'
+  displayName: 'Build e Teste'
+  jobs:
+  - job: 'Build'
+    displayName: 'Build Job'
+    pool:
+      vmImage: '$(vmImage)'
+
+    steps:
+    
+    - task: UseDotNet@2
+      displayName: 'Use .NET SDK $(dotnetSdkVersion)'
+      inputs:
+        packageType: 'sdk'
+        version: '$(dotnetSdkVersion)'
+    
+    
+    - task: DotNetCoreCLI@2
+      displayName: 'Restore solution'
+      inputs:
+        command: 'restore'
+        projects: '$(solution)'
+        feedsToUse: 'select'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Build solution'
+      inputs:
+        command: 'build'
+        projects: '$(solution)'
+        arguments: '--no-restore --configuration $(buildConfiguration)'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Run tests'
+      inputs:
+        command: 'test'
+        projects: '$(projectTest)'
+        arguments: '--no-build --configuration $(buildConfiguration)'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish API'
+      inputs:
+        command: 'publish'
+        projects: '$(projectApi)' 
+        publishWebProjects: false
+        arguments: '--no-build --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/App'
+        zipAfterPublish: true
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifact'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'drop'
+
+    - task: DownloadBuildArtifacts@1
+      displayName: 'Download Artifact'
+      inputs:
+        buildType: 'current'
+        downloadType: 'single'
+        artifactName: 'drop'
+        downloadPath: '$(Pipeline.Workspace)'
+
+    - script: |
+       echo o deploy em Produção foi executado com sucesso
+      displayName: 'Deploy em Produção'
+        
+    
+
+        
