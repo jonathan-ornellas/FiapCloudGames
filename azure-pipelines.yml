@@ -2,11 +2,11 @@
 pr:
   branches:
     include:
-      - main
+      - master
 trigger:
   branches:
     include:
-      - main
+      - master
 
 variables:
   buildConfiguration: 'Release'
