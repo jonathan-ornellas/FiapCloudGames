@@ -13,11 +13,9 @@ variables:
   dotnetSdkVersion: '8.x'
   vmImage: 'ubuntu-latest'
 
-  solution: 'FiapCloudGame.sln'
-  
-  projectApi: 'FiapCloudGame.API/FiapCloudGame.API.csproj'
-
-  projectTest: 'FiapCloudGame.Teste/FiapCloudGame.Teste.csproj'
+  solution: 'FiapCloudGame/FiapCloudGame.sln'
+  projectApi: 'FiapCloudGame/FiapCloudGame.API/FiapCloudGame.API.csproj'
+  projectTest: 'FiapCloudGame/FiapCloudGame.Teste/FiapCloudGame.Teste.csproj'
 
 stages:
 - stage: 'Build'
