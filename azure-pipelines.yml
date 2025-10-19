@@ -1,4 +1,3 @@
-
 pr:
   branches:
     include:
@@ -12,10 +11,10 @@ variables:
   buildConfiguration: 'Release'
   dotnetSdkVersion: '8.x'
   vmImage: 'ubuntu-latest'
-
-  solution: 'FiapCloudGame/FiapCloudGame.sln'
-  projectApi: 'FiapCloudGame/FiapCloudGame.API/FiapCloudGame.API.csproj'
-  projectTest: 'FiapCloudGame/FiapCloudGame.Teste/FiapCloudGame.Teste.csproj'
+  projectRoot: 'FiapCloudGame' 
+  solution: 'FiapCloudGame.sln'
+  projectApi: 'FiapCloudGame.API/FiapCloudGame.API.csproj'
+  projectTest: 'FiapCloudGame.Teste/FiapCloudGame.Teste.csproj'
 
 stages:
 - stage: 'Build'
@@ -27,7 +26,7 @@ stages:
       vmImage: '$(vmImage)'
 
     steps:
-   
+    
     - task: UseDotNet@2
       displayName: 'Use .NET SDK $(dotnetSdkVersion)'
       inputs:
@@ -40,13 +39,15 @@ stages:
         command: 'restore'
         projects: '$(solution)'
         feedsToUse: 'select'
-    
+        workingDirectory: '$(projectRoot)'
+
     - task: DotNetCoreCLI@2
       displayName: 'Build solution'
       inputs:
         command: 'build'
         projects: '$(solution)'
         arguments: '--no-restore --configuration $(buildConfiguration)'
+        workingDirectory: '$(projectRoot)'
 
     - task: DotNetCoreCLI@2
       displayName: 'Run tests'
@@ -54,6 +55,7 @@ stages:
         command: 'test'
         projects: '$(projectTest)'
         arguments: '--no-build --configuration $(buildConfiguration)'
+        workingDirectory: '$(projectRoot)'
 
     - task: DotNetCoreCLI@2
       displayName: 'Publish API'
@@ -63,6 +65,7 @@ stages:
         publishWebProjects: false
         arguments: '--no-build --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/App'
         zipAfterPublish: true
+        workingDirectory: '$(projectRoot)'
 
     - task: PublishBuildArtifacts@1
       displayName: 'Publish Artifact'
