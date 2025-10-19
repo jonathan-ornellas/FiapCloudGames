@@ -25,14 +25,6 @@ stages:
         packageType: 'sdk'
         version: '$(dotnetSdkVersion)'
 
-    - task: Npm@1
-      displayName: 'Run npm install'
-      inputs:
-        command: 'install'
-
-    - script: './node_modules/.bin/node-sass $(wwwrootDir) --output $(wwwrootDir)'
-      displayName: 'Compile Sass'
-
     - script: 'echo "$(Build.DefinitionName), $(Build.BuildId), $(Build.BuildNumber)" > buildinfo.txt'
       displayName: 'Write build info'
       workingDirectory: '$(wwwrootDir)'
