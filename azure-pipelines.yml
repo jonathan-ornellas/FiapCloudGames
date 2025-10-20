@@ -1,11 +1,5 @@
-pr:
-  branches:
-    include:
-      - master
 trigger:
-  branches:
-    include:
-      - master
+  - '*'
 
 variables:
   buildConfiguration: 'Release'
@@ -77,6 +71,7 @@ stages:
   jobs:
     - deployment: Deploy
       pool: self-hosted
+      environment: development
   #    variables:
   #      - group: ''
       strategy:
@@ -96,6 +91,7 @@ stages:
   jobs:
     - deployment: Deploy
       pool: self-hosted
+      environment: staging
    #   variables:
     #    - group: ''
       strategy:
@@ -115,6 +111,7 @@ stages:
   jobs:
     - deployment: Deploy
       pool: self-hosted
+      environment: production
    #   variables:
        # - group: ''
       strategy:
