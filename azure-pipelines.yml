@@ -78,6 +78,7 @@ stages:
         repository: 'pipeline-acr'
         command: 'buildAndPush'
         Dockerfile: '**/Fiap.Game.Api/Dockerfile'
+        buildContext: $(Build.SourcesDirectory)
         tags: '$(tag)'
 
 
