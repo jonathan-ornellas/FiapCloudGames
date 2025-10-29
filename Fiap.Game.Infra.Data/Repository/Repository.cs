@@ -13,7 +13,7 @@ namespace Fiap.Game.Infra.Data.Repository
         public Task AddRangeAsync(IEnumerable<T> entities, CancellationToken ct = default)
             => Set.AddRangeAsync(entities, ct);
         public Task<T?> GetByIdAsync(object id, CancellationToken ct = default)
-            => Set.FindAsync(new[] { id }, ct).AsTask();
+            => Set.FindAsync([id], ct).AsTask();
         public IQueryable<T> Query() => Set.AsQueryable();
         public void Update(T entity) => Set.Update(entity);
         public void Remove(T entity) => Set.Remove(entity);
