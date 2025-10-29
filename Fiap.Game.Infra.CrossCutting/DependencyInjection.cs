@@ -14,7 +14,7 @@ namespace Fiap.Game.Infra.CrossCutting
     {
         public static IServiceCollection AddGamePlatform(this IServiceCollection services, IConfiguration cfg)
         {
-            var connectionString = cfg.GetConnectionString("Default");
+            var connectionString = cfg.GetConnectionString("DefaultConnection");
             
             services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(connectionString));
