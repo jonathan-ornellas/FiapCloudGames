@@ -1,10 +1,18 @@
 trigger:
   - '*'
+resources:
+- repo: self
 
 variables:
   buildConfiguration: 'Release'
   dotnetSdkVersion: '8.x'
   vmImage: 'ubuntu-latest'
+  # Container registry service connection established during pipeline creation
+  dockerRegistryServiceConnection: 'be9fb58e-6c69-4bbb-9db6-a5a16492045b'
+  imageRepository: 'fiap'
+  containerRegistry: 'fiapgameacr.azurecr.io'
+  dockerfilePath: '$(Build.SourcesDirectory)/Fiap.Game.Api/Dockerfile'
+  tag: '$(Build.BuildId)'
   
   solution: 'Fiap.Game.sln'
   projectApi: 'Fiap.Game.Api/Fiap.Game.Api.csproj'
@@ -63,6 +71,16 @@ stages:
       inputs:
         PathtoPublish: '$(Build.ArtifactStagingDirectory)'
         ArtifactName: 'drop'
+    - task: Docker@2
+      displayName: Build and push an image to container registry
+      inputs:
+        containerRegistry: 'fiapgameacr'
+        repository: 'pipeline-acr'
+        command: 'buildAndPush'
+        Dockerfile: '**/Fiap.Game.Api/Dockerfile'
+        buildContext: $(Build.SourcesDirectory)
+        tags: '$(tag)'
+
 
 - stage: 'Development'
   displayName: 'Deploy to the Development environment'
@@ -122,4 +140,4 @@ stages:
                   artifact: drop
                 - script: |
                       echo O deploy em Production foi feito com sucesso
-                  displayName: 'Deploy to the Staging'
+                  displayName: 'Deploy to the Production'
