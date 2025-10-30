@@ -42,10 +42,10 @@ COPY --from=publish /app/publish .
 # Garante que o Kestrel escute na porta 80 
 ENV ASPNETCORE_URLS=http://+:80
 
+ENV ASPNETCORE_ENVIRONMENT=Docker
+
 # Cria um usuário não-root
 RUN groupadd -r appuser && useradd -r -g appuser appuser && chown -R appuser:appuser /app
-USER appuser
-
 
 EXPOSE 80
 
