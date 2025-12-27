@@ -72,14 +72,16 @@ stages:
         PathtoPublish: '$(Build.ArtifactStagingDirectory)'
         ArtifactName: 'drop'
     - task: Docker@2
-      displayName: Build and push an image to container registry
+      displayName:  Build and push image to Docker Hub
       inputs:
-        containerRegistry: 'fiapgameacr'
-        repository: 'pipeline-acr'
+        containerRegistry: 'dockerhub-jonathan'
+        repository: 'jonathanornellas/pipeline-acr'
         command: 'buildAndPush'
         Dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
-        buildContext: $(Build.SourcesDirectory)
-        tags: '$(tag)'
+        buildContext: '$(Build.SourcesDirectory)'
+        tags: |
+          $(Build.BuildId)
+          latest
 
 - stage: 'Development'
   displayName: 'Deploy to the Development environment'
@@ -94,13 +96,12 @@ stages:
       - task: AzureContainerApps@1
         inputs:
           azureSubscription: 'Azure subscription 1(a89e7f1d-0c61-4dfc-8f91-0f807f84d74f)'
-          acrName: 'fiapgameacr'
-          acrUsername: 'fiapgameacr'
-          acrPassword: 'rCW4blpC5GHc+uwBCGT912w34TlAdcoCnX7Z7QJi6z+ACRC8UQJS'
-          imageToDeploy: 'fiapgameacr.azurecr.io/pipeline-acr:47'
+          imageToDeploy: 'docker.io/jonathanornellas/pipeline-acr:$(Build.BuildId)'
           containerAppName: 'aca-fiap'
           resourceGroup: 'ACR'
           targetPort: '80'
+          registryUsername: 'jonathanornellas'
+          registryPassword: '$(DOCKERHUB_TOKEN)'
 
 - stage: 'Staging'
   displayName: 'Deploy to the Staging environment'
