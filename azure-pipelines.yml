@@ -1,18 +1,10 @@
 trigger:
   - '*'
-resources:
-- repo: self
 
 variables:
   buildConfiguration: 'Release'
   dotnetSdkVersion: '8.x'
   vmImage: 'ubuntu-latest'
-  # Container registry service connection established during pipeline creation
-  dockerRegistryServiceConnection: 'be9fb58e-6c69-4bbb-9db6-a5a16492045b'
-  imageRepository: 'fiap'
-  containerRegistry: 'fiapgameacr.azurecr.io'
-  dockerfilePath: '$(Build.SourcesDirectory)/Fiap.Game.Api/Dockerfile'
-  tag: '$(Build.BuildId)'
   
   solution: 'Fiap.Game.sln'
   projectApi: 'Fiap.Game.Api/Fiap.Game.Api.csproj'
@@ -73,15 +65,18 @@ stages:
       inputs:
         PathtoPublish: '$(Build.ArtifactStagingDirectory)'
         ArtifactName: 'drop'
+
     - task: Docker@2
-      displayName: Build and push an image to container registry
+      displayName: 'Build and push image to Docker Hub'
       inputs:
-        containerRegistry: 'fiapgameacr'
-        repository: 'pipeline-acr'
         command: 'buildAndPush'
-        Dockerfile: '**/Fiap.Game.Api/Dockerfile'
-        buildContext: $(Build.SourcesDirectory)
-        tags: '$(tag)'
+        containerRegistry: '$(dockerHubServiceConnection)'
+        repository: '$(dockerHubRepository)'
+        dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
+        buildContext: '$(Build.SourcesDirectory)'
+        tags: |
+          $(dockerTag)
+          latest
 
     - task: Docker@2
       displayName: 'Build and push image to Docker Hub'
@@ -100,21 +95,18 @@ stages:
   dependsOn: Build
   condition: succeeded()
   jobs:
-    - job: 'Deploy'
-      displayName: 'Deploy'
-      pool:
-        vmImage: '$(vmImage)'
-      steps:
-      - task: AzureContainerApps@1
-        inputs:
-          azureSubscription: 'Azure subscription 1(a89e7f1d-0c61-4dfc-8f91-0f807f84d74f)'
-          acrName: 'fiapgameacr'
-          acrUsername: 'fiapgameacr'
-          acrPassword: 'rCW4blpC5GHc+uwBCGT912w34TlAdcoCnX7Z7QJi6z+ACRC8UQJS'
-          imageToDeploy: 'fiapgameacr.azurecr.io/pipeline-acr:47'
-          containerAppName: 'aca-fiap'
-          resourceGroup: 'ACR'
-          targetPort: '80'
+    - deployment: Deploy
+      pool: self-hosted
+      environment: development
+      strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                  artifact: drop
+                - script: |
+                      echo O deploy em Development foi feito com sucesso
+                  displayName: 'Deploy to the Development'
 
 - stage: 'Staging'
   displayName: 'Deploy to the Staging environment'
@@ -150,4 +142,4 @@ stages:
                   artifact: drop
                 - script: |
                       echo O deploy em Production foi feito com sucesso
-                  displayName: 'Deploy to the Production'
+                  displayName: 'Deploy to the Staging'
