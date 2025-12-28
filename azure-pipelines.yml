@@ -18,6 +18,10 @@ variables:
   projectApi: 'Fiap.Game.Api/Fiap.Game.Api.csproj'
   projectTest: 'Fiap.Game.Tests/Fiap.Game.Tests.csproj' 
 
+  dockerHubServiceConnection: 'dockerhub-jonathan'    
+  dockerHubRepository: 'jonathanornellas/pipeline-fiapgame' 
+  dockerTag: '$(Build.BuildId)'
+
 stages:
 - stage: 'Build'
   displayName: 'Build e Teste'
@@ -28,13 +32,11 @@ stages:
       vmImage: '$(vmImage)'
 
     steps:
-    
     - task: UseDotNet@2
       displayName: 'Use .NET SDK $(dotnetSdkVersion)'
       inputs:
         packageType: 'sdk'
         version: '$(dotnetSdkVersion)'
-    
     
     - task: DotNetCoreCLI@2
       displayName: 'Restore solution'
@@ -81,6 +83,18 @@ stages:
         buildContext: $(Build.SourcesDirectory)
         tags: '$(tag)'
 
+    - task: Docker@2
+      displayName: 'Build and push image to Docker Hub'
+      inputs:
+        command: 'buildAndPush'
+        containerRegistry: '$(dockerHubServiceConnection)'
+        repository: '$(dockerHubRepository)'
+        dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
+        buildContext: '$(Build.SourcesDirectory)'
+        tags: |
+          $(dockerTag)
+          latest
+
 - stage: 'Development'
   displayName: 'Deploy to the Development environment'
   dependsOn: Build
@@ -110,8 +124,6 @@ stages:
     - deployment: Deploy
       pool: self-hosted
       environment: staging
-   #   variables:
-    #    - group: ''
       strategy:
           runOnce:
             deploy:
@@ -130,8 +142,6 @@ stages:
     - deployment: Deploy
       pool: self-hosted
       environment: production
-   #   variables:
-       # - group: ''
       strategy:
           runOnce:
             deploy:
