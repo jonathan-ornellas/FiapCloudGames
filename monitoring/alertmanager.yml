@@ -1,0 +1,58 @@
+global:
+  resolve_timeout: 5m
+  slack_api_url: ''  # Adicione sua URL do webhook Slack aqui (opcional)
+
+# Configuração de templates
+templates: []
+
+# Configuração de roteamento de alertas
+route:
+  receiver: 'default'
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+
+  routes:
+    # Alertas críticos
+    - match:
+        severity: critical
+      receiver: 'critical'
+      group_wait: 0s
+      group_interval: 5m
+      repeat_interval: 1h
+
+    # Alertas de warning
+    - match:
+        severity: warning
+      receiver: 'warning'
+      group_wait: 30s
+      group_interval: 10m
+      repeat_interval: 4h
+
+# Receptores de alertas
+receivers:
+  - name: 'default'
+    # Adicione aqui suas integrações (email, Slack, PagerDuty, etc)
+
+  - name: 'critical'
+    # Alertas críticos - considere adicionar integrações aqui
+    # Exemplo de email:
+    # email_configs:
+    #   - to: 'admin@example.com'
+    #     from: 'alertmanager@example.com'
+    #     smarthost: 'smtp.example.com:587'
+    #     auth_username: 'user@example.com'
+    #     auth_password: 'password'
+
+  - name: 'warning'
+    # Alertas de warning
+
+# Inibição de alertas
+inhibit_rules:
+  # Não enviar alertas de warning se já há um alerta crítico
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']

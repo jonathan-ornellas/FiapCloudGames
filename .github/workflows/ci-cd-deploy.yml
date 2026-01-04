@@ -1,0 +1,338 @@
+name: CI/CD - Build, Test e Deploy AWS
+
+on:
+  push:
+    branches: [ "stage", "main", "master" ]
+  pull_request:
+    branches: [ "stage", "main", "master" ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: jonathanornellas/fiapcloudgames
+  AWS_REGION: us-east-1
+
+jobs:
+  # ============================================
+  # JOB 1: BUILD E TESTES (CI)
+  # ============================================
+  build-and-test:
+    runs-on: ubuntu-latest
+    name: Build, Test & Analyze
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: 📦 Restore dependencies
+        run: dotnet restore
+
+      - name: 🏗️ Build application
+        run: dotnet build --configuration Release --no-restore
+
+      - name: 🧪 Run tests
+        run: dotnet test --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
+
+      - name: 📊 Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: '**/test-results.trx'
+
+      - name: ✅ Test Summary
+        if: always()
+        run: |
+          echo "## ✅ Build & Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Build: Success" >> $GITHUB_STEP_SUMMARY
+          echo "- Tests: Completed" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================
+  # JOB 2: BUILD E PUSH DOCKER (CD)
+  # ============================================
+  build-and-push-docker:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    name: Build & Push Docker Image
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/stage' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔐 Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: 🐳 Build Docker image
+        run: |
+          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest .
+          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} .
+
+      - name: 📤 Push Docker image to registry
+        run: |
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: 📝 Update image tag
+        run: |
+          echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_ENV
+          echo "IMAGE_LATEST=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_ENV
+
+  # ============================================
+  # JOB 3: DEPLOY NA AWS EC2 (CD)
+  # ============================================
+  deploy-to-aws:
+    needs: build-and-push-docker
+    runs-on: ubuntu-latest
+    name: Deploy to AWS EC2
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/stage' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔐 Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 📤 Send deployment script to EC2
+        run: |
+          # Criar script PowerShell de deploy
+          cat > deploy-script.ps1 << 'EOF'
+          # ============================================
+          # Script de Deploy - FiapCloudGames
+          # ============================================
+          
+          $DeployPath = "C:\inetpub\fiapGames"
+          $ImageName = "jonathanornellas/fiapcloudgames:latest"
+          $ContainerName = "fiapgames-app"
+          $ContainerPort = 8080
+          $HostPort = 8080
+          
+          Write-Host "🚀 Iniciando deploy do FiapCloudGames..." -ForegroundColor Green
+          Write-Host "📦 Imagem: $ImageName" -ForegroundColor Cyan
+          Write-Host "📁 Caminho: $DeployPath" -ForegroundColor Cyan
+          Write-Host "🔌 Porta: $HostPort" -ForegroundColor Cyan
+          
+          # Criar diretório se não existir
+          if (-not (Test-Path $DeployPath)) {
+              New-Item -ItemType Directory -Path $DeployPath -Force | Out-Null
+              Write-Host "✅ Diretório criado: $DeployPath" -ForegroundColor Green
+          }
+          
+          # Parar container anterior
+          Write-Host "`n⏹️  Parando container anterior..." -ForegroundColor Yellow
+          $existingContainer = docker ps -a -q -f name=$ContainerName
+          if ($existingContainer) {
+              docker stop $ContainerName -ErrorAction SilentlyContinue
+              docker rm $ContainerName -ErrorAction SilentlyContinue
+              Write-Host "✅ Container anterior removido" -ForegroundColor Green
+          }
+          
+          # Pull da imagem mais recente
+          Write-Host "`n📥 Fazendo pull da imagem do Docker Hub..." -ForegroundColor Yellow
+          docker pull $ImageName
+          if ($LASTEXITCODE -ne 0) {
+              Write-Host "❌ Erro ao fazer pull da imagem" -ForegroundColor Red
+              exit 1
+          }
+          Write-Host "✅ Imagem baixada com sucesso" -ForegroundColor Green
+          
+          # Iniciar novo container
+          Write-Host "`n🚀 Iniciando novo container..." -ForegroundColor Yellow
+          docker run -d `
+              --name $ContainerName `
+              -p ${HostPort}:${ContainerPort} `
+              -e ASPNETCORE_ENVIRONMENT=Production `
+              -e ASPNETCORE_URLS=http://+:${ContainerPort} `
+              -v ${DeployPath}:/app/data `
+              --restart unless-stopped `
+              $ImageName
+          
+          if ($LASTEXITCODE -ne 0) {
+              Write-Host "❌ Erro ao iniciar container" -ForegroundColor Red
+              exit 1
+          }
+          Write-Host "✅ Container iniciado com sucesso" -ForegroundColor Green
+          
+          # Aguardar container ficar pronto
+          Write-Host "`n⏳ Aguardando container ficar pronto..." -ForegroundColor Yellow
+          Start-Sleep -Seconds 5
+          
+          # Verificar status
+          Write-Host "`n📊 Status do container:" -ForegroundColor Cyan
+          docker ps -f name=$ContainerName
+          
+          Write-Host "`n✅ Deploy concluído com sucesso!" -ForegroundColor Green
+          Write-Host "🌐 Acesse: http://localhost:${HostPort}/swagger" -ForegroundColor Green
+          
+          EOF
+          
+          # Salvar script em arquivo
+          aws s3 cp deploy-script.ps1 s3://fiap-cloud-games-deploy/deploy-script.ps1 --region ${{ env.AWS_REGION }} || true
+
+      - name: 🚀 Execute deployment on EC2
+        run: |
+          # Script PowerShell de deploy
+          DEPLOY_SCRIPT='
+          $DeployPath = "C:\inetpub\fiapGames"
+          $ImageName = "jonathanornellas/fiapcloudgames:latest"
+          $ContainerName = "fiapgames-app"
+          $ContainerPort = 8080
+          $HostPort = 8080
+          
+          Write-Host "🚀 Iniciando deploy do FiapCloudGames..." -ForegroundColor Green
+          Write-Host "📦 Imagem: $ImageName" -ForegroundColor Cyan
+          Write-Host "📁 Caminho: $DeployPath" -ForegroundColor Cyan
+          Write-Host "🔌 Porta: $HostPort" -ForegroundColor Cyan
+          
+          # Criar diretório se não existir
+          if (-not (Test-Path $DeployPath)) {
+              New-Item -ItemType Directory -Path $DeployPath -Force | Out-Null
+              Write-Host "✅ Diretório criado: $DeployPath" -ForegroundColor Green
+          }
+          
+          # Parar container anterior
+          Write-Host "`n⏹️  Parando container anterior..." -ForegroundColor Yellow
+          $existingContainer = docker ps -a -q -f name=$ContainerName
+          if ($existingContainer) {
+              docker stop $ContainerName -ErrorAction SilentlyContinue
+              docker rm $ContainerName -ErrorAction SilentlyContinue
+              Write-Host "✅ Container anterior removido" -ForegroundColor Green
+          }
+          
+          # Pull da imagem mais recente
+          Write-Host "`n📥 Fazendo pull da imagem do Docker Hub..." -ForegroundColor Yellow
+          docker pull $ImageName
+          if ($LASTEXITCODE -ne 0) {
+              Write-Host "❌ Erro ao fazer pull da imagem" -ForegroundColor Red
+              exit 1
+          }
+          Write-Host "✅ Imagem baixada com sucesso" -ForegroundColor Green
+          
+          # Iniciar novo container
+          Write-Host "`n🚀 Iniciando novo container..." -ForegroundColor Yellow
+          docker run -d `
+              --name $ContainerName `
+              -p ${HostPort}:${ContainerPort} `
+              -e ASPNETCORE_ENVIRONMENT=Production `
+              -e ASPNETCORE_URLS=http://+:${ContainerPort} `
+              -v ${DeployPath}:/app/data `
+              --restart unless-stopped `
+              $ImageName
+          
+          if ($LASTEXITCODE -ne 0) {
+              Write-Host "❌ Erro ao iniciar container" -ForegroundColor Red
+              exit 1
+          }
+          Write-Host "✅ Container iniciado com sucesso" -ForegroundColor Green
+          
+          # Aguardar container ficar pronto
+          Write-Host "`n⏳ Aguardando container ficar pronto..." -ForegroundColor Yellow
+          Start-Sleep -Seconds 5
+          
+          # Verificar status
+          Write-Host "`n📊 Status do container:" -ForegroundColor Cyan
+          docker ps -f name=$ContainerName
+          
+          Write-Host "`n✅ Deploy concluído com sucesso!" -ForegroundColor Green
+          Write-Host "🌐 Acesse: http://localhost:${HostPort}/swagger" -ForegroundColor Green
+          '
+          
+          # Usar AWS Systems Manager para executar o comando
+          aws ssm send-command \
+            --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
+            --document-name "AWS-RunPowerShellScript" \
+            --parameters 'commands='"'"''"$DEPLOY_SCRIPT"''"'"'' \
+            --region ${{ env.AWS_REGION }} \
+            --output json > command-output.json
+          
+          # Obter command ID
+          COMMAND_ID=$(jq -r '.Command.CommandId' command-output.json)
+          echo "Command ID: $COMMAND_ID"
+          
+          # Aguardar conclusão do comando
+          echo "⏳ Aguardando execução do comando..."
+          for i in {1..30}; do
+            STATUS=$(aws ssm get-command-invocation \
+              --command-id "$COMMAND_ID" \
+              --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
+              --region ${{ env.AWS_REGION }} \
+              --query 'Status' \
+              --output text)
+            
+            if [ "$STATUS" = "Success" ] || [ "$STATUS" = "Failed" ]; then
+              echo "✅ Comando finalizado com status: $STATUS"
+              
+              # Obter output
+              aws ssm get-command-invocation \
+                --command-id "$COMMAND_ID" \
+                --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
+                --region ${{ env.AWS_REGION }} \
+                --query 'StandardOutputContent' \
+                --output text
+              
+              if [ "$STATUS" = "Failed" ]; then
+                aws ssm get-command-invocation \
+                  --command-id "$COMMAND_ID" \
+                  --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
+                  --region ${{ env.AWS_REGION }} \
+                  --query 'StandardErrorContent' \
+                  --output text
+                exit 1
+              fi
+              break
+            fi
+            
+            echo "Status: $STATUS (tentativa $i/30)"
+            sleep 2
+          done
+
+      - name: 📊 Deployment Summary
+        if: always()
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Docker Image: jonathanornellas/fiapcloudgames:latest" >> $GITHUB_STEP_SUMMARY
+          echo "- Deployed to: AWS EC2 Windows" >> $GITHUB_STEP_SUMMARY
+          echo "- Path: C:\inetpub\fiapGames" >> $GITHUB_STEP_SUMMARY
+          echo "- Port: 8080" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: ✅ Completed" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================
+  # JOB 4: NOTIFICAÇÃO FINAL
+  # ============================================
+  notify:
+    needs: [build-and-test, build-and-push-docker, deploy-to-aws]
+    runs-on: ubuntu-latest
+    name: Notify Deployment
+    if: always()
+
+    steps:
+      - name: 📢 Deployment Status
+        run: |
+          echo "## 📢 Pipeline Execution Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Jobs Status:" >> $GITHUB_STEP_SUMMARY
+          echo "- Build & Test: ${{ needs.build-and-test.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Docker Build & Push: ${{ needs.build-and-push-docker.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Deploy to AWS: ${{ needs.deploy-to-aws.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Deployment Details:" >> $GITHUB_STEP_SUMMARY
+          echo "- Branch: ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Author: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY

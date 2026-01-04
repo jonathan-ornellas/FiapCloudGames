@@ -1,0 +1,129 @@
+groups:
+  - name: fiapcloudgames_alerts
+    interval: 30s
+    rules:
+      # ============================================
+      # CPU Alerts
+      # ============================================
+      - alert: HighCPUUsage
+        expr: (100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Alto uso de CPU detectado"
+          description: "CPU em {{ $value }}% na instância {{ $labels.instance }}"
+
+      - alert: CriticalCPUUsage
+        expr: (100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 95
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Uso crítico de CPU"
+          description: "CPU em {{ $value }}% na instância {{ $labels.instance }}"
+
+      # ============================================
+      # Memory Alerts
+      # ============================================
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Alto uso de memória detectado"
+          description: "Memória em {{ $value }}% na instância {{ $labels.instance }}"
+
+      - alert: CriticalMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 95
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Uso crítico de memória"
+          description: "Memória em {{ $value }}% na instância {{ $labels.instance }}"
+
+      # ============================================
+      # Disk Alerts
+      # ============================================
+      - alert: HighDiskUsage
+        expr: (1 - (node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs|squashfs|vfat"} / node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs|squashfs|vfat"})) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Alto uso de disco detectado"
+          description: "Disco {{ $labels.device }} em {{ $value }}%"
+
+      - alert: CriticalDiskUsage
+        expr: (1 - (node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs|squashfs|vfat"} / node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs|squashfs|vfat"})) * 100 > 95
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Uso crítico de disco"
+          description: "Disco {{ $labels.device }} em {{ $value }}%"
+
+      # ============================================
+      # Container Alerts
+      # ============================================
+      - alert: ContainerDown
+        expr: up{job="fiapcloudgames-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container FiapCloudGames está down"
+          description: "O container da API não está respondendo"
+
+      - alert: HighContainerMemory
+        expr: (container_memory_usage_bytes{name="fiapgames-api"} / container_spec_memory_limit_bytes{name="fiapgames-api"}) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Alto uso de memória no container"
+          description: "Container usando {{ $value }}% da memória alocada"
+
+      # ============================================
+      # Network Alerts
+      # ============================================
+      - alert: HighNetworkIn
+        expr: rate(node_network_receive_bytes_total{device!~"lo|docker0|br-.*|veth.*"}[5m]) > 100000000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Alto tráfego de entrada detectado"
+          description: "Interface {{ $labels.device }} recebendo {{ $value | humanize }}B/s"
+
+      - alert: HighNetworkOut
+        expr: rate(node_network_transmit_bytes_total{device!~"lo|docker0|br-.*|veth.*"}[5m]) > 100000000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Alto tráfego de saída detectado"
+          description: "Interface {{ $labels.device }} transmitindo {{ $value | humanize }}B/s"
+
+      # ============================================
+      # Application Alerts
+      # ============================================
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Alta taxa de erros na aplicação"
+          description: "Taxa de erros 5xx: {{ $value | humanizePercentage }}"
+
+      - alert: SlowResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tempo de resposta lento detectado"
+          description: "P95 latência: {{ $value }}s"
