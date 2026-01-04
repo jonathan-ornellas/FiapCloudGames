@@ -11,7 +11,7 @@ variables:
   projectTest: 'Fiap.Game.Tests/Fiap.Game.Tests.csproj' 
 
   dockerHubServiceConnection: 'dockerhub-jonathan'    
-  dockerHubRepository: 'jonathanornellas/pipeline-fiapgame' 
+  dockerHubRepository: 'jonathanornellas/fiapcloudgames' 
   dockerTag: '$(Build.BuildId)'
 
 stages:
@@ -49,7 +49,7 @@ stages:
       inputs:
         command: 'test'
         projects: '$(projectTest)'
-        arguments: '--no-build --configuration $(buildConfiguration)'
+        arguments: '--no-build --configuration $(buildConfiguration) --collect:"XPlat Code Coverage"'
 
     - task: DotNetCoreCLI@2
       displayName: 'Publish API'
@@ -78,20 +78,8 @@ stages:
           $(dockerTag)
           latest
 
-    - task: Docker@2
-      displayName: 'Build and push image to Docker Hub'
-      inputs:
-        command: 'buildAndPush'
-        containerRegistry: '$(dockerHubServiceConnection)'
-        repository: '$(dockerHubRepository)'
-        dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
-        buildContext: '$(Build.SourcesDirectory)'
-        tags: |
-          $(dockerTag)
-          latest
-
 - stage: 'Development'
-  displayName: 'Deploy to the Development environment'
+  displayName: 'Deploy to Development'
   dependsOn: Build
   condition: succeeded()
   jobs:
@@ -105,29 +93,130 @@ stages:
                 - download: current
                   artifact: drop
                 - script: |
-                      echo O deploy em Development foi feito com sucesso
-                  displayName: 'Deploy to the Development'
+                      echo Deploy em Development foi feito com sucesso
+                  displayName: 'Deploy to Development'
 
 - stage: 'Staging'
-  displayName: 'Deploy to the Staging environment'
+  displayName: 'Deploy to AWS EC2 (Staging)'
   dependsOn: Development
   condition: eq(variables['Build.SourceBranch'], 'refs/heads/stage')
   jobs:
-    - deployment: Deploy
-      pool: self-hosted
-      environment: staging
-      strategy:
-          runOnce:
-            deploy:
-              steps:
-                - download: current
-                  artifact: drop
-                - script: |
-                      echo O deploy em Staging foi feito com sucesso
-                  displayName: 'Deploy to the Staging'
-                
+    - job: DeployToAWS
+      displayName: 'Deploy to AWS EC2'
+      pool:
+        vmImage: '$(vmImage)'
+      
+      steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '3.x'
+        displayName: 'Use Python 3.x'
+
+      - script: |
+          pip install boto3
+        displayName: 'Install AWS SDK'
+
+      - script: |
+          python -c "
+          import boto3
+          import json
+          
+          # Configurar cliente SSM
+          ssm_client = boto3.client(
+              'ssm',
+              region_name='$(AWS_REGION)',
+              aws_access_key_id='$(AWS_ACCESS_KEY_ID)',
+              aws_secret_access_key='$(AWS_SECRET_ACCESS_KEY)'
+          )
+          
+          # Script PowerShell de deploy
+          deploy_script = '''
+          \$DeployPath = \"C:\\inetpub\\fiapGames\"
+          \$ImageName = \"jonathanornellas/fiapcloudgames:latest\"
+          \$ContainerName = \"fiapgames-app\"
+          \$HostPort = 8080
+          \$ContainerPort = 80
+          
+          Write-Host \"🚀 Iniciando deploy do FiapCloudGames...\" -ForegroundColor Green
+          
+          # Criar diretório
+          if (-not (Test-Path \$DeployPath)) {
+              New-Item -ItemType Directory -Path \$DeployPath -Force | Out-Null
+              Write-Host \"✅ Diretório criado\" -ForegroundColor Green
+          }
+          
+          # Parar container anterior
+          Write-Host \"⏹️  Parando container anterior...\" -ForegroundColor Yellow
+          \$existingContainer = docker ps -a -q -f name=\$ContainerName 2>$null
+          if (\$existingContainer) {
+              docker stop \$ContainerName -ErrorAction SilentlyContinue | Out-Null
+              docker rm \$ContainerName -ErrorAction SilentlyContinue | Out-Null
+              Write-Host \"✅ Container anterior removido\" -ForegroundColor Green
+          }
+          
+          # Pull da imagem
+          Write-Host \"📥 Fazendo pull da imagem...\" -ForegroundColor Yellow
+          docker pull \$ImageName
+          if (\$LASTEXITCODE -ne 0) {
+              Write-Host \"❌ Erro ao fazer pull\" -ForegroundColor Red
+              exit 1
+          }
+          Write-Host \"✅ Imagem baixada\" -ForegroundColor Green
+          
+          # Iniciar container
+          Write-Host \"🚀 Iniciando novo container...\" -ForegroundColor Yellow
+          docker run -d \`
+              --name \$ContainerName \`
+              -p \${HostPort}:\${ContainerPort} \`
+              -e ASPNETCORE_ENVIRONMENT=Production \`
+              -e ASPNETCORE_URLS=http://+:\${ContainerPort} \`
+              -v \${DeployPath}:/app/data \`
+              --restart unless-stopped \`
+              \$ImageName
+          
+          if (\$LASTEXITCODE -ne 0) {
+              Write-Host \"❌ Erro ao iniciar container\" -ForegroundColor Red
+              exit 1
+          }
+          Write-Host \"✅ Container iniciado com sucesso\" -ForegroundColor Green
+          
+          # Aguardar container
+          Write-Host \"⏳ Aguardando container ficar pronto...\" -ForegroundColor Yellow
+          Start-Sleep -Seconds 5
+          
+          # Verificar status
+          Write-Host \"📊 Status do container:\" -ForegroundColor Cyan
+          docker ps -f name=\$ContainerName
+          
+          Write-Host \"✅ Deploy concluído!\" -ForegroundColor Green
+          Write-Host \"🌐 Acesse: http://localhost:\${HostPort}/swagger\" -ForegroundColor Green
+          '''
+          
+          # Enviar comando para EC2
+          response = ssm_client.send_command(
+              InstanceIds=['$(EC2_INSTANCE_ID)'],
+              DocumentName='AWS-RunPowerShellScript',
+              Parameters={'commands': [deploy_script]}
+          )
+          
+          command_id = response['Command']['CommandId']
+          print(f'Command ID: {command_id}')
+          print('Deploy iniciado na EC2...')
+          "
+        displayName: 'Execute Deploy on EC2'
+        env:
+          AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+          AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+          AWS_REGION: $(AWS_REGION)
+          EC2_INSTANCE_ID: $(EC2_INSTANCE_ID)
+
+      - script: |
+          echo "✅ Deploy para Staging (AWS EC2) concluído com sucesso!"
+          echo "API: http://98.84.222.215:8080/swagger"
+        displayName: 'Deploy Summary'
+
 - stage: 'Production'
-  displayName: 'Deploy to the Production environment'
+  displayName: 'Deploy to Production'
   dependsOn: Staging
   condition: eq(variables['Build.SourceBranch'], 'refs/heads/master')
   jobs:
@@ -141,5 +230,5 @@ stages:
                 - download: current
                   artifact: drop
                 - script: |
-                      echo O deploy em Production foi feito com sucesso
-                  displayName: 'Deploy to the Staging'
+                      echo Deploy em Production foi feito com sucesso
+                  displayName: 'Deploy to Production'
