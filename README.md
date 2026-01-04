@@ -8,9 +8,18 @@ Sistema completo de gerenciamento de jogos desenvolvido em .NET 8 com arquitetur
 ```bash
 docker-compose up -d
 ```
-Acesse: http://localhost:8080/swagger
+Accesse: http://localhost:8080/swagger
 
-### Opção 2: Visual Studio (Desenvolvimento)
+### Opção 2: Docker com Monitoramento
+```bash
+docker-compose -f docker-compose.monitoring.yml up -d
+```
+Accesse:
+- API: http://localhost:8080/swagger
+- Grafana: http://localhost:3000 (admin/admin123)
+- Prometheus: http://localhost:9090
+
+### Opção 3: Visual Studio (Desenvolvimento)
 1. Abrir `src/Fiap.Game/Fiap.Game.sln` no Visual Studio
 2. Executar migrations no Package Manager Console:
    ```powershell
@@ -48,14 +57,25 @@ Acesse: http://localhost:8080/swagger
 
 ## 🛠️ Tecnologias
 
+### Backend
 - **.NET 8** - Framework principal
 - **Entity Framework Core** - ORM com SQL Server
 - **JWT** - Autenticação e autorização
 - **AutoMapper** - Mapeamento de objetos
 - **FluentValidation** - Validação de entrada
 - **BCrypt** - Hash seguro de senhas
-- **Docker** - Containerização
 - **Swagger/OpenAPI** - Documentação interativa
+
+### DevOps & Infraestrutura
+- **Docker** - Containerização
+- **GitHub Actions** - CI/CD automático
+- **AWS EC2** - Hospedagem em nuvem
+- **AWS Systems Manager** - Deploy remoto
+
+### Monitoramento
+- **Prometheus** - Coleta de métricas
+- **Grafana** - Visualização de dados
+- **Alertmanager** - Gerenciamento de alertas
 
 ## 🏗️ Arquitetura
 
@@ -103,9 +123,29 @@ cd src/Fiap.Game
 dotnet test
 ```
 
+## 🚀 CI/CD e Deploy
+
+A aplicação possui pipeline automática que:
+- Executa testes em PRs
+- Faz build e push da imagem Docker
+- Deploy automático na AWS EC2
+
+Veja [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) para detalhes.
+
+## 📊 Monitoramento
+
+Stack completo com Prometheus, Grafana e Alertmanager:
+- Métricas de CPU, memória, disco, rede
+- Latência e taxa de erros da aplicação
+- 10+ alertas configurados
+
+Veja [MONITORING_GUIDE.md](MONITORING_GUIDE.md) para detalhes.
+
 ## 📚 Documentação Adicional
 
 - **[Guia de Execução Detalhado](GUIA_EXECUCAO.md)** - Instruções completas
+- **[Guia de Deployment](DEPLOYMENT_GUIDE.md)** - Setup AWS e GitHub Actions
+- **[Guia de Monitoramento](MONITORING_GUIDE.md)** - Prometheus, Grafana, alertas
 
 ## 🔧 Comandos Úteis
 
