@@ -1,5 +1,16 @@
 trigger:
-  - '*'
+  branches:
+    include:
+      - development
+      - stage
+      - master
+
+pr:
+  branches:
+    include:
+      - development
+      - stage
+      - master
 
 variables:
   buildConfiguration: 'Release'
@@ -66,6 +77,17 @@ stages:
         PathtoPublish: '$(Build.ArtifactStagingDirectory)'
         ArtifactName: 'drop'
 
+- stage: 'Docker'
+  displayName: 'Build e Push Docker'
+  dependsOn: Build
+  condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/stage'), eq(variables['Build.SourceBranch'], 'refs/heads/master')))
+  jobs:
+  - job: 'DockerBuild'
+    displayName: 'Build and Push Docker Image'
+    pool:
+      vmImage: '$(vmImage)'
+
+    steps:
     - task: Docker@2
       displayName: 'Build and push image to Docker Hub'
       inputs:
@@ -80,8 +102,8 @@ stages:
 
 - stage: 'Development'
   displayName: 'Deploy to Development'
-  dependsOn: Build
-  condition: succeeded()
+  dependsOn: Docker
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/development'))
   jobs:
     - deployment: Deploy
       pool: self-hosted
@@ -98,8 +120,8 @@ stages:
 
 - stage: 'Staging'
   displayName: 'Deploy to AWS EC2 (Staging)'
-  dependsOn: Development
-  condition: eq(variables['Build.SourceBranch'], 'refs/heads/stage')
+  dependsOn: Docker
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/stage'))
   jobs:
     - job: DeployToAWS
       displayName: 'Deploy to AWS EC2'
@@ -170,6 +192,7 @@ stages:
               -p \${HostPort}:\${ContainerPort} \`
               -e ASPNETCORE_ENVIRONMENT=Production \`
               -e ASPNETCORE_URLS=http://+:\${ContainerPort} \`
+              -e ConnectionStrings__DefaultConnection=\"\$(echo $FIAP_CONNECTION_STRING)\" \`
               -v \${DeployPath}:/app/data \`
               --restart unless-stopped \`
               \$ImageName
@@ -209,6 +232,7 @@ stages:
           AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
           AWS_REGION: $(AWS_REGION)
           EC2_INSTANCE_ID: $(EC2_INSTANCE_ID)
+          FIAP_CONNECTION_STRING: $(ConnectionStrings__DefaultConnection)
 
       - script: |
           echo "✅ Deploy para Staging (AWS EC2) concluído com sucesso!"
@@ -217,8 +241,8 @@ stages:
 
 - stage: 'Production'
   displayName: 'Deploy to Production'
-  dependsOn: Staging
-  condition: eq(variables['Build.SourceBranch'], 'refs/heads/master')
+  dependsOn: Docker
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
   jobs:
     - deployment: Deploy
       pool: self-hosted
