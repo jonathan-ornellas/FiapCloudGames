@@ -1,0 +1,69 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36221.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared", "Shared", "{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Microservices", "Microservices", "{B1B2C3D4-E5F6-7890-ABCD-EF1234567891}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Serverless", "Serverless", "{C1B2C3D4-E5F6-7890-ABCD-EF1234567892}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FiapCloudGames.Shared", "FiapCloudGames.Shared\FiapCloudGames.Shared.csproj", "{D1B2C3D4-E5F6-7890-ABCD-EF1234567893}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FiapCloudGames.EventSourcing", "FiapCloudGames.EventSourcing\FiapCloudGames.EventSourcing.csproj", "{E1B2C3D4-E5F6-7890-ABCD-EF1234567894}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FiapCloudGames.Users.Api", "FiapCloudGames.Users.Api\FiapCloudGames.Users.Api.csproj", "{F1B2C3D4-E5F6-7890-ABCD-EF1234567895}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FiapCloudGames.Games.Api", "FiapCloudGames.Games.Api\FiapCloudGames.Games.Api.csproj", "{A2B2C3D4-E5F6-7890-ABCD-EF1234567896}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FiapCloudGames.Payments.Api", "FiapCloudGames.Payments.Api\FiapCloudGames.Payments.Api.csproj", "{B2B2C3D4-E5F6-7890-ABCD-EF1234567897}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FiapCloudGames.Lambda", "FiapCloudGames.Lambda\FiapCloudGames.Lambda.csproj", "{C2B2C3D4-E5F6-7890-ABCD-EF1234567898}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D1B2C3D4-E5F6-7890-ABCD-EF1234567893}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1B2C3D4-E5F6-7890-ABCD-EF1234567893}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1B2C3D4-E5F6-7890-ABCD-EF1234567893}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1B2C3D4-E5F6-7890-ABCD-EF1234567893}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E1B2C3D4-E5F6-7890-ABCD-EF1234567894}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E1B2C3D4-E5F6-7890-ABCD-EF1234567894}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E1B2C3D4-E5F6-7890-ABCD-EF1234567894}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E1B2C3D4-E5F6-7890-ABCD-EF1234567894}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F1B2C3D4-E5F6-7890-ABCD-EF1234567895}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F1B2C3D4-E5F6-7890-ABCD-EF1234567895}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F1B2C3D4-E5F6-7890-ABCD-EF1234567895}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F1B2C3D4-E5F6-7890-ABCD-EF1234567895}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A2B2C3D4-E5F6-7890-ABCD-EF1234567896}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A2B2C3D4-E5F6-7890-ABCD-EF1234567896}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A2B2C3D4-E5F6-7890-ABCD-EF1234567896}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A2B2C3D4-E5F6-7890-ABCD-EF1234567896}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2B2C3D4-E5F6-7890-ABCD-EF1234567897}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2B2C3D4-E5F6-7890-ABCD-EF1234567897}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2B2C3D4-E5F6-7890-ABCD-EF1234567897}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2B2C3D4-E5F6-7890-ABCD-EF1234567897}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C2B2C3D4-E5F6-7890-ABCD-EF1234567898}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2B2C3D4-E5F6-7890-ABCD-EF1234567898}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2B2C3D4-E5F6-7890-ABCD-EF1234567898}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2B2C3D4-E5F6-7890-ABCD-EF1234567898}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{D1B2C3D4-E5F6-7890-ABCD-EF1234567893} = {A1B2C3D4-E5F6-7890-ABCD-EF1234567890}
+		{E1B2C3D4-E5F6-7890-ABCD-EF1234567894} = {A1B2C3D4-E5F6-7890-ABCD-EF1234567890}
+		{F1B2C3D4-E5F6-7890-ABCD-EF1234567895} = {B1B2C3D4-E5F6-7890-ABCD-EF1234567891}
+		{A2B2C3D4-E5F6-7890-ABCD-EF1234567896} = {B1B2C3D4-E5F6-7890-ABCD-EF1234567891}
+		{B2B2C3D4-E5F6-7890-ABCD-EF1234567897} = {B1B2C3D4-E5F6-7890-ABCD-EF1234567891}
+		{C2B2C3D4-E5F6-7890-ABCD-EF1234567898} = {C1B2C3D4-E5F6-7890-ABCD-EF1234567892}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {12345678-1234-1234-1234-123456789012}
+	EndGlobalSection
+EndGlobal
