@@ -1,6 +1,5 @@
 global:
   resolve_timeout: 5m
-  slack_api_url: ''  # Adicione sua URL do webhook Slack aqui (opcional)
 
 # Configuração de templates
 templates: []
