@@ -195,7 +195,7 @@ stages:
               -p 8080:80 \
               -e ASPNETCORE_ENVIRONMENT=Production \
               -e ASPNETCORE_URLS=http://+:80 \
-              -e ConnectionStrings__DefaultConnection="$(echo $FIAP_CONNECTION_STRING)" \
+              -e "ConnectionStrings__DefaultConnection=$FIAP_CONNECTION_STRING" \
               -v /opt/fiapgames/data:/app/data \
               --restart unless-stopped \
               jonathanornellas/fiapcloudgames:latest
