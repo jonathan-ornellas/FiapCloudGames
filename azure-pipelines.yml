@@ -119,12 +119,12 @@ stages:
                   displayName: 'Deploy to Development'
 
 - stage: 'Staging'
-  displayName: 'Deploy to AWS EC2 (Staging)'
+  displayName: 'Deploy to AWS EC2 Linux (Staging)'
   dependsOn: Docker
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/stage'))
   jobs:
     - job: DeployToAWS
-      displayName: 'Deploy to AWS EC2'
+      displayName: 'Deploy to AWS EC2 Linux'
       pool:
         vmImage: '$(vmImage)'
       
@@ -139,9 +139,10 @@ stages:
         displayName: 'Install AWS SDK'
 
       - script: |
-          python -c "
+          python << 'EOF'
           import boto3
           import json
+          import time
           
           # Configurar cliente SSM
           ssm_client = boto3.client(
@@ -151,82 +152,95 @@ stages:
               aws_secret_access_key='$(AWS_SECRET_ACCESS_KEY)'
           )
           
-          # Script PowerShell de deploy
-          deploy_script = '''
-          \$DeployPath = \"C:\\inetpub\\fiapGames\"
-          \$ImageName = \"jonathanornellas/fiapcloudgames:latest\"
-          \$ContainerName = \"fiapgames-app\"
-          \$HostPort = 8080
-          \$ContainerPort = 80
+          # Script Bash de deploy para Linux
+          deploy_script = '''#!/bin/bash
+          set -e
           
-          Write-Host \"🚀 Iniciando deploy do FiapCloudGames...\" -ForegroundColor Green
+          echo "🚀 Iniciando deploy do FiapCloudGames..."
           
-          # Criar diretório
-          if (-not (Test-Path \$DeployPath)) {
-              New-Item -ItemType Directory -Path \$DeployPath -Force | Out-Null
-              Write-Host \"✅ Diretório criado\" -ForegroundColor Green
-          }
+          # Atualizar sistema
+          sudo apt-get update -qq
+          
+          # Instalar Docker se não estiver instalado
+          if ! command -v docker &> /dev/null; then
+              echo "📦 Instalando Docker..."
+              sudo apt-get install -y docker.io docker-compose
+              sudo usermod -aG docker ubuntu
+          fi
+          
+          # Instalar Docker Compose se não estiver instalado
+          if ! command -v docker-compose &> /dev/null; then
+              echo "📦 Instalando Docker Compose..."
+              sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+              sudo chmod +x /usr/local/bin/docker-compose
+          fi
+          
+          # Criar diretório de deploy
+          sudo mkdir -p /opt/fiapgames
+          cd /opt/fiapgames
           
           # Parar container anterior
-          Write-Host \"⏹️  Parando container anterior...\" -ForegroundColor Yellow
-          \$existingContainer = docker ps -a -q -f name=\$ContainerName 2>$null
-          if (\$existingContainer) {
-              docker stop \$ContainerName -ErrorAction SilentlyContinue | Out-Null
-              docker rm \$ContainerName -ErrorAction SilentlyContinue | Out-Null
-              Write-Host \"✅ Container anterior removido\" -ForegroundColor Green
-          }
+          echo "⏹️  Parando container anterior..."
+          sudo docker stop fiapgames-app 2>/dev/null || true
+          sudo docker rm fiapgames-app 2>/dev/null || true
           
           # Pull da imagem
-          Write-Host \"📥 Fazendo pull da imagem...\" -ForegroundColor Yellow
-          docker pull \$ImageName
-          if (\$LASTEXITCODE -ne 0) {
-              Write-Host \"❌ Erro ao fazer pull\" -ForegroundColor Red
-              exit 1
-          }
-          Write-Host \"✅ Imagem baixada\" -ForegroundColor Green
+          echo "📥 Fazendo pull da imagem..."
+          sudo docker pull jonathanornellas/fiapcloudgames:latest
           
           # Iniciar container
-          Write-Host \"🚀 Iniciando novo container...\" -ForegroundColor Yellow
-          docker run -d \`
-              --name \$ContainerName \`
-              -p \${HostPort}:\${ContainerPort} \`
-              -e ASPNETCORE_ENVIRONMENT=Production \`
-              -e ASPNETCORE_URLS=http://+:\${ContainerPort} \`
-              -e ConnectionStrings__DefaultConnection=\"\$(echo $FIAP_CONNECTION_STRING)\" \`
-              -v \${DeployPath}:/app/data \`
-              --restart unless-stopped \`
-              \$ImageName
-          
-          if (\$LASTEXITCODE -ne 0) {
-              Write-Host \"❌ Erro ao iniciar container\" -ForegroundColor Red
-              exit 1
-          }
-          Write-Host \"✅ Container iniciado com sucesso\" -ForegroundColor Green
+          echo "🚀 Iniciando novo container..."
+          sudo docker run -d \
+              --name fiapgames-app \
+              -p 8080:80 \
+              -e ASPNETCORE_ENVIRONMENT=Production \
+              -e ASPNETCORE_URLS=http://+:80 \
+              -e ConnectionStrings__DefaultConnection="$(echo $FIAP_CONNECTION_STRING)" \
+              -v /opt/fiapgames/data:/app/data \
+              --restart unless-stopped \
+              jonathanornellas/fiapcloudgames:latest
           
           # Aguardar container
-          Write-Host \"⏳ Aguardando container ficar pronto...\" -ForegroundColor Yellow
-          Start-Sleep -Seconds 5
+          echo "⏳ Aguardando container ficar pronto..."
+          sleep 5
           
           # Verificar status
-          Write-Host \"📊 Status do container:\" -ForegroundColor Cyan
-          docker ps -f name=\$ContainerName
+          echo "📊 Status do container:"
+          sudo docker ps -f name=fiapgames-app
           
-          Write-Host \"✅ Deploy concluído!\" -ForegroundColor Green
-          Write-Host \"🌐 Acesse: http://localhost:\${HostPort}/swagger\" -ForegroundColor Green
+          echo "✅ Deploy concluído!"
+          echo "🌐 Acesse: http://13.219.223.45:8080/swagger"
           '''
           
           # Enviar comando para EC2
           response = ssm_client.send_command(
               InstanceIds=['$(EC2_INSTANCE_ID)'],
-              DocumentName='AWS-RunPowerShellScript',
+              DocumentName='AWS-RunShellScript',
               Parameters={'commands': [deploy_script]}
           )
           
           command_id = response['Command']['CommandId']
           print(f'Command ID: {command_id}')
           print('Deploy iniciado na EC2...')
-          "
-        displayName: 'Execute Deploy on EC2'
+          
+          # Aguardar conclusão
+          time.sleep(10)
+          
+          # Verificar status
+          invocation = ssm_client.get_command_invocation(
+              CommandId=command_id,
+              InstanceId='$(EC2_INSTANCE_ID)'
+          )
+          
+          print(f"Status: {invocation['Status']}")
+          if invocation['Status'] == 'Success':
+              print("✅ Deploy executado com sucesso!")
+          else:
+              print("❌ Erro no deploy")
+              if 'StandardErrorContent' in invocation:
+                  print(invocation['StandardErrorContent'])
+          EOF
+        displayName: 'Execute Deploy on EC2 Linux'
         env:
           AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
           AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
@@ -235,8 +249,8 @@ stages:
           FIAP_CONNECTION_STRING: $(ConnectionStrings__DefaultConnection)
 
       - script: |
-          echo "✅ Deploy para Staging (AWS EC2) concluído com sucesso!"
-          echo "API: http://98.84.222.215:8080/swagger"
+          echo "✅ Deploy para Staging (AWS EC2 Linux) concluído com sucesso!"
+          echo "API: http://13.219.223.45:8080/swagger"
         displayName: 'Deploy Summary'
 
 - stage: 'Production'
