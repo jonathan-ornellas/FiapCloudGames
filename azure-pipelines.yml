@@ -1,24 +1,32 @@
 trigger:
-  - '*'
+  branches:
+    include:
+      - development
+      - stage
+      - master
+
+pr:
+  branches:
+    include:
+      - development
+      - stage
+      - master
 
 variables:
   buildConfiguration: 'Release'
   dotnetSdkVersion: '8.x'
   vmImage: 'ubuntu-latest'
   
-  solution: 'Fiap.Game.sln'
-  projectApi: 'Fiap.Game.Api/Fiap.Game.Api.csproj'
-  projectTest: 'Fiap.Game.Tests/Fiap.Game.Tests.csproj' 
-
-  dockerHubServiceConnection: 'dockerhub-jonathan'    
-  dockerHubRepository: 'jonathanornellas/pipeline-fiapgame' 
+  microservicesSolution: 'FiapCloudGames.Microservices.sln'
+  dockerHubServiceConnection: 'dockerhub-jonathan'
+  dockerHubRepository: 'jonathanornellas/fiapcloudgames'
   dockerTag: '$(Build.BuildId)'
 
 stages:
 - stage: 'Build'
-  displayName: 'Build e Teste'
+  displayName: 'Build Microsserviços'
   jobs:
-  - job: 'Build'
+  - job: 'BuildMicroservices'
     displayName: 'Build Job'
     pool:
       vmImage: '$(vmImage)'
@@ -31,69 +39,88 @@ stages:
         version: '$(dotnetSdkVersion)'
     
     - task: DotNetCoreCLI@2
-      displayName: 'Restore solution'
+      displayName: 'Restore Microservices Solution'
       inputs:
         command: 'restore'
-        projects: '$(solution)'
+        projects: '$(microservicesSolution)'
         feedsToUse: 'select'
 
     - task: DotNetCoreCLI@2
-      displayName: 'Build solution'
+      displayName: 'Build Microservices Solution'
       inputs:
         command: 'build'
-        projects: '$(solution)'
+        projects: '$(microservicesSolution)'
         arguments: '--no-restore --configuration $(buildConfiguration)'
 
-    - task: DotNetCoreCLI@2
-      displayName: 'Run tests'
-      inputs:
-        command: 'test'
-        projects: '$(projectTest)'
-        arguments: '--no-build --configuration $(buildConfiguration)'
-
-    - task: DotNetCoreCLI@2
-      displayName: 'Publish API'
-      inputs:
-        command: 'publish'
-        projects: '$(projectApi)' 
-        publishWebProjects: false
-        arguments: '--no-build --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/App'
-        zipAfterPublish: true
-
     - task: PublishBuildArtifacts@1
-      displayName: 'Publish Artifact'
+      displayName: 'Publish Build Artifacts'
       inputs:
         PathtoPublish: '$(Build.ArtifactStagingDirectory)'
         ArtifactName: 'drop'
 
+- stage: 'Docker'
+  displayName: 'Build e Push Docker Images'
+  dependsOn: Build
+  condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/stage'), eq(variables['Build.SourceBranch'], 'refs/heads/master')))
+  jobs:
+  - job: 'DockerBuildUsers'
+    displayName: 'Build and Push Users API Image'
+    pool:
+      vmImage: '$(vmImage)'
+
+    steps:
     - task: Docker@2
-      displayName: 'Build and push image to Docker Hub'
+      displayName: 'Build and push Users API image'
       inputs:
         command: 'buildAndPush'
         containerRegistry: '$(dockerHubServiceConnection)'
-        repository: '$(dockerHubRepository)'
-        dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
+        repository: '$(dockerHubRepository)-users'
+        dockerfile: '$(Build.SourcesDirectory)/FiapCloudGames.Users.Api/Dockerfile'
         buildContext: '$(Build.SourcesDirectory)'
         tags: |
           $(dockerTag)
           latest
 
+  - job: 'DockerBuildGames'
+    displayName: 'Build and Push Games API Image'
+    pool:
+      vmImage: '$(vmImage)'
+
+    steps:
     - task: Docker@2
-      displayName: 'Build and push image to Docker Hub'
+      displayName: 'Build and push Games API image'
       inputs:
         command: 'buildAndPush'
         containerRegistry: '$(dockerHubServiceConnection)'
-        repository: '$(dockerHubRepository)'
-        dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
+        repository: '$(dockerHubRepository)-games'
+        dockerfile: '$(Build.SourcesDirectory)/FiapCloudGames.Games.Api/Dockerfile'
+        buildContext: '$(Build.SourcesDirectory)'
+        tags: |
+          $(dockerTag)
+          latest
+
+  - job: 'DockerBuildPayments'
+    displayName: 'Build and Push Payments API Image'
+    pool:
+      vmImage: '$(vmImage)'
+
+    steps:
+    - task: Docker@2
+      displayName: 'Build and push Payments API image'
+      inputs:
+        command: 'buildAndPush'
+        containerRegistry: '$(dockerHubServiceConnection)'
+        repository: '$(dockerHubRepository)-payments'
+        dockerfile: '$(Build.SourcesDirectory)/FiapCloudGames.Payments.Api/Dockerfile'
         buildContext: '$(Build.SourcesDirectory)'
         tags: |
           $(dockerTag)
           latest
 
 - stage: 'Development'
-  displayName: 'Deploy to the Development environment'
-  dependsOn: Build
-  condition: succeeded()
+  displayName: 'Deploy to Development'
+  dependsOn: Docker
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/development'))
   jobs:
     - deployment: Deploy
       pool: self-hosted
@@ -105,31 +132,204 @@ stages:
                 - download: current
                   artifact: drop
                 - script: |
-                      echo O deploy em Development foi feito com sucesso
-                  displayName: 'Deploy to the Development'
+                      echo Deploy em Development foi feito com sucesso
+                  displayName: 'Deploy to Development'
 
 - stage: 'Staging'
-  displayName: 'Deploy to the Staging environment'
-  dependsOn: Development
-  condition: eq(variables['Build.SourceBranch'], 'refs/heads/stage')
+  displayName: 'Deploy to AWS EC2 Linux (Staging)'
+  dependsOn: Docker
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/stage'))
   jobs:
-    - deployment: Deploy
-      pool: self-hosted
-      environment: staging
-      strategy:
-          runOnce:
-            deploy:
-              steps:
-                - download: current
-                  artifact: drop
-                - script: |
-                      echo O deploy em Staging foi feito com sucesso
-                  displayName: 'Deploy to the Staging'
-                
+    - job: DeployToAWS
+      displayName: 'Deploy Microservices to AWS EC2'
+      pool:
+        vmImage: '$(vmImage)'
+      
+      steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '3.x'
+        displayName: 'Use Python 3.x'
+
+      - script: |
+          pip install boto3
+        displayName: 'Install AWS SDK'
+
+      - script: |
+          python << 'EOF'
+          import boto3
+          import time
+          
+          ssm_client = boto3.client(
+              'ssm',
+              region_name='$(AWS_REGION)',
+              aws_access_key_id='$(AWS_ACCESS_KEY_ID)',
+              aws_secret_access_key='$(AWS_SECRET_ACCESS_KEY)'
+          )
+          
+          connection_string = '$(ConnectionStrings__DefaultConnection)'
+          jwt_key = '$(Jwt__Key)'
+          
+          deploy_script = f'''#!/bin/bash
+          set -e
+          
+          echo "Iniciando deploy dos microsserviços..."
+          
+          sudo apt-get update -qq
+          
+          if ! command -v docker &> /dev/null; then
+              echo "Instalando Docker..."
+              sudo apt-get install -y docker.io docker-compose
+              sudo usermod -aG docker ubuntu
+          fi
+          
+          if ! command -v docker-compose &> /dev/null; then
+              echo "Instalando Docker Compose..."
+              sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+              sudo chmod +x /usr/local/bin/docker-compose
+          fi
+          
+          sudo mkdir -p /opt/fiapgames
+          cd /opt/fiapgames
+          
+          echo "Parando containers anteriores..."
+          sudo docker-compose -f docker-compose.microservices.yml down 2>/dev/null || true
+          
+          echo "Fazendo pull das imagens..."
+          sudo docker pull jonathanornellas/fiapcloudgames-users:latest
+          sudo docker pull jonathanornellas/fiapcloudgames-games:latest
+          sudo docker pull jonathanornellas/fiapcloudgames-payments:latest
+          
+          cat > docker-compose.microservices.yml << 'COMPOSE'
+          version: '3.8'
+          services:
+            sqlserver:
+              image: mcr.microsoft.com/mssql/server:2022-latest
+              environment:
+                SA_PASSWORD: YourPassword123!
+                ACCEPT_EULA: "Y"
+              ports:
+                - "1433:1433"
+              volumes:
+                - sqlserver_data:/var/opt/mssql
+              networks:
+                - fiap-network
+            
+            elasticsearch:
+              image: docker.elastic.co/elasticsearch/elasticsearch:8.10.0
+              environment:
+                - discovery.type=single-node
+                - xpack.security.enabled=false
+                - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+              ports:
+                - "9200:9200"
+              volumes:
+                - elasticsearch_data:/usr/share/elasticsearch/data
+              networks:
+                - fiap-network
+            
+            users-api:
+              image: jonathanornellas/fiapcloudgames-users:latest
+              environment:
+                - ConnectionStrings__DefaultConnection={connection_string}
+                - Jwt__Key={jwt_key}
+                - Jwt__Issuer=fiap-cloud-games
+                - Jwt__Audience=fiap-cloud-games-users
+              ports:
+                - "5001:8080"
+              depends_on:
+                - sqlserver
+              networks:
+                - fiap-network
+              restart: unless-stopped
+            
+            games-api:
+              image: jonathanornellas/fiapcloudgames-games:latest
+              environment:
+                - ConnectionStrings__DefaultConnection={connection_string}
+                - Elasticsearch__Host=elasticsearch:9200
+              ports:
+                - "5002:8080"
+              depends_on:
+                - sqlserver
+                - elasticsearch
+              networks:
+                - fiap-network
+              restart: unless-stopped
+            
+            payments-api:
+              image: jonathanornellas/fiapcloudgames-payments:latest
+              environment:
+                - ConnectionStrings__DefaultConnection={connection_string}
+              ports:
+                - "5003:8080"
+              depends_on:
+                - sqlserver
+              networks:
+                - fiap-network
+              restart: unless-stopped
+          
+          volumes:
+            sqlserver_data:
+            elasticsearch_data:
+          
+          networks:
+            fiap-network:
+              driver: bridge
+          COMPOSE
+          
+          echo "Iniciando containers..."
+          sudo docker-compose -f docker-compose.microservices.yml up -d
+          
+          echo "Aguardando containers ficarem prontos..."
+          sleep 10
+          
+          echo "Status dos containers:"
+          sudo docker-compose -f docker-compose.microservices.yml ps
+          
+          echo "Deploy dos microsserviços concluído!"
+          '''
+          
+          response = ssm_client.send_command(
+              InstanceIds=['$(EC2_INSTANCE_ID)'],
+              DocumentName='AWS-RunShellScript',
+              Parameters={'commands': [deploy_script]}
+          )
+          
+          command_id = response['Command']['CommandId']
+          print(f'Command ID: {command_id}')
+          print('Deploy iniciado na EC2...')
+          
+          time.sleep(15)
+          
+          invocation = ssm_client.get_command_invocation(
+              CommandId=command_id,
+              InstanceId='$(EC2_INSTANCE_ID)'
+          )
+          
+          print(f"Status: {invocation['Status']}")
+          if invocation['Status'] == 'Success':
+              print("Deploy executado com sucesso!")
+          else:
+              print("Erro no deploy")
+              if 'StandardErrorContent' in invocation:
+                  print(invocation['StandardErrorContent'])
+          EOF
+        displayName: 'Execute Deploy on EC2 Linux'
+        env:
+          AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+          AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+          AWS_REGION: $(AWS_REGION)
+          EC2_INSTANCE_ID: $(EC2_INSTANCE_ID)
+
+      - script: |
+          echo "Deploy dos microsserviços para Staging concluído com sucesso!"
+        displayName: 'Deploy Summary'
+
 - stage: 'Production'
-  displayName: 'Deploy to the Production environment'
-  dependsOn: Staging
-  condition: eq(variables['Build.SourceBranch'], 'refs/heads/master')
+  displayName: 'Deploy to Production'
+  dependsOn: Docker
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
   jobs:
     - deployment: Deploy
       pool: self-hosted
@@ -141,5 +341,5 @@ stages:
                 - download: current
                   artifact: drop
                 - script: |
-                      echo O deploy em Production foi feito com sucesso
-                  displayName: 'Deploy to the Staging'
+                      echo Deploy em Production foi feito com sucesso
+                  displayName: 'Deploy to Production'
