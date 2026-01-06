@@ -1,0 +1,42 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'fiap-cloud-games'
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+rule_files:
+  - 'alert_rules.yml'
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'users-api'
+    static_configs:
+      - targets: ['users-api:8080']
+    metrics_path: '/metrics'
+
+  - job_name: 'games-api'
+    static_configs:
+      - targets: ['games-api:8080']
+    metrics_path: '/metrics'
+
+  - job_name: 'payments-api'
+    static_configs:
+      - targets: ['payments-api:8080']
+    metrics_path: '/metrics'
+
+  - job_name: 'elasticsearch'
+    static_configs:
+      - targets: ['elasticsearch:9200']
+
+  - job_name: 'rabbitmq'
+    static_configs:
+      - targets: ['rabbitmq:15672']
