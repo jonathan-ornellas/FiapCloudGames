@@ -141,10 +141,8 @@ stages:
       - script: |
           python << 'EOF'
           import boto3
-          import json
           import time
           
-          # Configurar cliente SSM
           ssm_client = boto3.client(
               'ssm',
               region_name='$(AWS_REGION)',
@@ -152,47 +150,38 @@ stages:
               aws_secret_access_key='$(AWS_SECRET_ACCESS_KEY)'
           )
           
-          # Connection string do Azure DevOps (injetada aqui)
           connection_string = '$(ConnectionStrings__DefaultConnection)'
           
-          # Script Bash de deploy para Linux
           deploy_script = f'''#!/bin/bash
           set -e
           
-          echo "🚀 Iniciando deploy do FiapCloudGames..."
+          echo "Iniciando deploy do FiapCloudGames..."
           
-          # Atualizar sistema
           sudo apt-get update -qq
           
-          # Instalar Docker se não estiver instalado
           if ! command -v docker &> /dev/null; then
-              echo "📦 Instalando Docker..."
+              echo "Instalando Docker..."
               sudo apt-get install -y docker.io docker-compose
               sudo usermod -aG docker ubuntu
           fi
           
-          # Instalar Docker Compose se não estiver instalado
           if ! command -v docker-compose &> /dev/null; then
-              echo "📦 Instalando Docker Compose..."
+              echo "Instalando Docker Compose..."
               sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
               sudo chmod +x /usr/local/bin/docker-compose
           fi
           
-          # Criar diretório de deploy
           sudo mkdir -p /opt/fiapgames
           cd /opt/fiapgames
           
-          # Parar container anterior
-          echo "⏹️  Parando container anterior..."
+          echo "Parando container anterior..."
           sudo docker stop fiapgames-app 2>/dev/null || true
           sudo docker rm fiapgames-app 2>/dev/null || true
           
-          # Pull da imagem
-          echo "📥 Fazendo pull da imagem..."
+          echo "Fazendo pull da imagem..."
           sudo docker pull jonathanornellas/fiapcloudgames:latest
           
-          # Iniciar container com connection string injetada
-          echo "🚀 Iniciando novo container..."
+          echo "Iniciando novo container..."
           sudo docker run -d \
               --name fiapgames-app \
               -p 8080:80 \
@@ -203,19 +192,15 @@ stages:
               --restart unless-stopped \
               jonathanornellas/fiapcloudgames:latest
           
-          # Aguardar container
-          echo "⏳ Aguardando container ficar pronto..."
+          echo "Aguardando container ficar pronto..."
           sleep 5
           
-          # Verificar status
-          echo "📊 Status do container:"
+          echo "Status do container:"
           sudo docker ps -f name=fiapgames-app
           
-          echo "✅ Deploy concluído!"
-          echo "🌐 Acesse: http://13.219.223.45:8080/swagger"
+          echo "Deploy concluido!"
           '''
           
-          # Enviar comando para EC2
           response = ssm_client.send_command(
               InstanceIds=['$(EC2_INSTANCE_ID)'],
               DocumentName='AWS-RunShellScript',
@@ -226,10 +211,8 @@ stages:
           print(f'Command ID: {command_id}')
           print('Deploy iniciado na EC2...')
           
-          # Aguardar conclusão
           time.sleep(10)
           
-          # Verificar status
           invocation = ssm_client.get_command_invocation(
               CommandId=command_id,
               InstanceId='$(EC2_INSTANCE_ID)'
@@ -237,9 +220,9 @@ stages:
           
           print(f"Status: {invocation['Status']}")
           if invocation['Status'] == 'Success':
-              print("✅ Deploy executado com sucesso!")
+              print("Deploy executado com sucesso!")
           else:
-              print("❌ Erro no deploy")
+              print("Erro no deploy")
               if 'StandardErrorContent' in invocation:
                   print(invocation['StandardErrorContent'])
           EOF
@@ -251,8 +234,7 @@ stages:
           EC2_INSTANCE_ID: $(EC2_INSTANCE_ID)
 
       - script: |
-          echo "✅ Deploy para Staging (AWS EC2 Linux) concluído com sucesso!"
-          echo "API: http://13.219.223.45:8080/swagger"
+          echo "Deploy para Staging concluido com sucesso!"
         displayName: 'Deploy Summary'
 
 - stage: 'Production'
