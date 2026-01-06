@@ -152,8 +152,11 @@ stages:
               aws_secret_access_key='$(AWS_SECRET_ACCESS_KEY)'
           )
           
+          # Connection string do Azure DevOps (injetada aqui)
+          connection_string = '$(ConnectionStrings__DefaultConnection)'
+          
           # Script Bash de deploy para Linux
-          deploy_script = '''#!/bin/bash
+          deploy_script = f'''#!/bin/bash
           set -e
           
           echo "🚀 Iniciando deploy do FiapCloudGames..."
@@ -188,14 +191,14 @@ stages:
           echo "📥 Fazendo pull da imagem..."
           sudo docker pull jonathanornellas/fiapcloudgames:latest
           
-          # Iniciar container
+          # Iniciar container com connection string injetada
           echo "🚀 Iniciando novo container..."
           sudo docker run -d \
               --name fiapgames-app \
               -p 8080:80 \
               -e ASPNETCORE_ENVIRONMENT=Production \
               -e ASPNETCORE_URLS=http://+:80 \
-              -e "ConnectionStrings__DefaultConnection=$FIAP_CONNECTION_STRING" \
+              -e "ConnectionStrings__DefaultConnection={connection_string}" \
               -v /opt/fiapgames/data:/app/data \
               --restart unless-stopped \
               jonathanornellas/fiapcloudgames:latest
@@ -246,7 +249,6 @@ stages:
           AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
           AWS_REGION: $(AWS_REGION)
           EC2_INSTANCE_ID: $(EC2_INSTANCE_ID)
-          FIAP_CONNECTION_STRING: $(ConnectionStrings__DefaultConnection)
 
       - script: |
           echo "✅ Deploy para Staging (AWS EC2 Linux) concluído com sucesso!"
