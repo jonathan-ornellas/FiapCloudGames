@@ -13,6 +13,24 @@ services:
     networks:
       - fiap-network
 
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - fiap-network
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.10.0
     environment:
@@ -49,6 +67,9 @@ services:
     environment:
       - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=FiapGameGames;User Id=sa;Password=YourPassword123!;Encrypt=false;
       - Elasticsearch__Url=http://elasticsearch:9200
+      - RabbitMq__Host=rabbitmq
+      - RabbitMq__Username=guest
+      - RabbitMq__Password=guest
       - Jwt__Key=your-secret-key-that-is-at-least-32-characters-long-for-hs256
       - Jwt__Issuer=fiap-cloud-games
       - Jwt__Audience=fiap-cloud-games-games
@@ -57,6 +78,7 @@ services:
     depends_on:
       - sqlserver
       - elasticsearch
+      - rabbitmq
     networks:
       - fiap-network
 
@@ -66,6 +88,9 @@ services:
       dockerfile: FiapCloudGames.Payments.Api/Dockerfile
     environment:
       - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=FiapGamePayments;User Id=sa;Password=YourPassword123!;Encrypt=false;
+      - RabbitMq__Host=rabbitmq
+      - RabbitMq__Username=guest
+      - RabbitMq__Password=guest
       - Jwt__Key=your-secret-key-that-is-at-least-32-characters-long-for-hs256
       - Jwt__Issuer=fiap-cloud-games
       - Jwt__Audience=fiap-cloud-games-payments
@@ -73,6 +98,7 @@ services:
       - "5003:8080"
     depends_on:
       - sqlserver
+      - rabbitmq
     networks:
       - fiap-network
 
@@ -119,6 +145,7 @@ services:
 volumes:
   sqlserver_data:
   elasticsearch_data:
+  rabbitmq_data:
   prometheus_data:
   grafana_data:
   alertmanager_data:
