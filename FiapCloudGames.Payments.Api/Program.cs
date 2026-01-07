@@ -2,6 +2,7 @@ using FiapCloudGames.Payments.Api.Data;
 using FiapCloudGames.Payments.Api.Repositories;
 using FiapCloudGames.Payments.Api.Services;
 using FiapCloudGames.EventSourcing;
+using FiapCloudGames.Shared.RabbitMQ;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -74,6 +75,12 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IEventStore, EventStoreRepository>();
+
+var rabbitMqHost = builder.Configuration["RabbitMq:Host"] ?? Environment.GetEnvironmentVariable("RabbitMq__Host") ?? "localhost";
+var rabbitMqUsername = builder.Configuration["RabbitMq:Username"] ?? Environment.GetEnvironmentVariable("RabbitMq__Username") ?? "guest";
+var rabbitMqPassword = builder.Configuration["RabbitMq:Password"] ?? Environment.GetEnvironmentVariable("RabbitMq__Password") ?? "guest";
+
+builder.Services.AddSingleton<IRabbitMQPublisher>(sp => new RabbitMQPublisher(rabbitMqHost, rabbitMqUsername, rabbitMqPassword));
 
 builder.Services.AddCors(options =>
 {

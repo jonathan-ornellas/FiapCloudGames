@@ -82,9 +82,9 @@ public class GamePurchasedEvent : DomainEvent
 }
 
 /// <summary>
-/// Evento de pagamento processado
+/// Evento de pagamento processado para Event Sourcing
 /// </summary>
-public class PaymentProcessedEvent : DomainEvent
+public class PaymentProcessedDomainEvent : DomainEvent
 {
     public Guid PaymentId { get; set; }
     public Guid UserId { get; set; }

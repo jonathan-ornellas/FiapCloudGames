@@ -24,6 +24,7 @@
     <PackageReference Include="Serilog.AspNetCore" Version="8.1.0" />
     <PackageReference Include="AWSSDK.Lambda" Version="3.7.400.18" />
     <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="8.5.0" />
+    <PackageReference Include="RabbitMQ.Client" Version="6.8.1" />
   </ItemGroup>
 
   <ItemGroup>

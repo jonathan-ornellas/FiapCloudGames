@@ -15,6 +15,7 @@ public interface IGameService
     Task<RecommendationResponse> GetRecommendationsAsync(Guid userId);
     Task<GameResponse> UpdateGameAsync(Guid id, UpdateGameRequest request);
     Task<bool> DeleteGameAsync(Guid id);
+    Task AddGameToLibraryAsync(Guid userId, Guid gameId);
 }
 
 public class GameService : IGameService
@@ -146,6 +147,13 @@ public class GameService : IGameService
             await _elasticsearchService.DeleteGameIndexAsync(id);
         }
         return result;
+    }
+
+    public async Task AddGameToLibraryAsync(Guid userId, Guid gameId)
+    {
+        var game = await _gameRepository.GetByIdAsync(gameId);
+        if (game == null)
+            throw new InvalidOperationException($"Game {gameId} not found");
     }
 
     private GameResponse MapToResponse(Game game)
