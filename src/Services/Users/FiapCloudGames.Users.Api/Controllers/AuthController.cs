@@ -7,7 +7,7 @@ using FiapCloudGames.Domain.ValueObjects;
 namespace FiapCloudGames.Users.Api.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
     private readonly AuthService _authService;
@@ -20,7 +20,12 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterUserDto registerUserDto)
     {
-        var user = new User(registerUserDto.Name, new Email(registerUserDto.Email), registerUserDto.Password);
+        var user = new User(
+            registerUserDto.Name, 
+            new Email(registerUserDto.Email), 
+            registerUserDto.Password,
+            "User"
+        );
         var token = await _authService.RegisterAsync(user);
         return Ok(new { Token = token });
     }
@@ -28,7 +33,7 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginUserDto loginUserDto)
     {
-        var token = await _authService.LoginAsync(new Email(loginUserDto.Email), loginUserDto.Password);
+        var token = await _authService.LoginAsync(loginUserDto.Email, loginUserDto.Password);
         return Ok(new { Token = token });
     }
 }

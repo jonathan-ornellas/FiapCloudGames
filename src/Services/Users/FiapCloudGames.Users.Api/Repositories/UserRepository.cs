@@ -30,5 +30,21 @@ namespace FiapCloudGames.Users.Api.Repositories
         {
             return await _context.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
         }
+
+        public async Task<User?> GetByIdAsync(int id, CancellationToken ct = default)
+        {
+            return await _context.Users.FindAsync(new object[] { id }, ct);
+        }
+
+        public async Task UpdateAsync(User user, CancellationToken ct = default)
+        {
+            _context.Users.Update(user);
+            await Task.CompletedTask;
+        }
+
+        public async Task<IEnumerable<User>> GetAllAsync(CancellationToken ct = default)
+        {
+            return await _context.Users.ToListAsync(ct);
+        }
     }
 }

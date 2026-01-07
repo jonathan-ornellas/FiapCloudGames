@@ -30,7 +30,8 @@ namespace FiapCloudGames.Users.Api.Services
                 {
                     new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                     new Claim(JwtRegisteredClaimNames.Email, user.Email.Value),
-                    new Claim(JwtRegisteredClaimNames.Name, user.Name)
+                    new Claim(JwtRegisteredClaimNames.Name, user.Name),
+                    new Claim(ClaimTypes.Role, user.Role)
                 }
             );
 

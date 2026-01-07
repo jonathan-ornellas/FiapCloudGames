@@ -16,12 +16,6 @@ namespace FiapCloudGames.Games.Business
 
         public async Task CreateAsync(Game game, CancellationToken ct = default)
         {
-            if (game.Price.Value <= 0)
-                throw new ArgumentException("Preço do jogo deve ser maior que zero");
-
-            if (game.Rating < 0 || game.Rating > 10)
-                throw new ArgumentException("Rating do jogo deve ser entre 0 e 10");
-
             await _games.AddAsync(game, ct);
             await _uow.SaveChangesAsync(ct);
         }
