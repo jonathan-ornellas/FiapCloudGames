@@ -1,4 +1,4 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36221.1
@@ -20,6 +20,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FiapCloudGames.Payments.Api", "FiapCloudGames.Payments.Api\FiapCloudGames.Payments.Api.csproj", "{B2B2C3D4-E5F6-7890-ABCD-EF1234567897}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FiapCloudGames.Lambda", "FiapCloudGames.Lambda\FiapCloudGames.Lambda.csproj", "{C2B2C3D4-E5F6-7890-ABCD-EF1234567898}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FiapCloudGames.Tests.Integration", "FiapCloudGames.Tests.Integration\FiapCloudGames.Tests.Integration.csproj", "{A67D4A86-6ACD-40B8-968B-775ACF2EB4D7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FiapCloudGames.Tests.Unit", "FiapCloudGames.Tests.Unit\FiapCloudGames.Tests.Unit.csproj", "{42ADEA24-723D-4F7E-B1F0-48B9C67CDEB2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,6 +55,14 @@ Global
 		{C2B2C3D4-E5F6-7890-ABCD-EF1234567898}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C2B2C3D4-E5F6-7890-ABCD-EF1234567898}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C2B2C3D4-E5F6-7890-ABCD-EF1234567898}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A67D4A86-6ACD-40B8-968B-775ACF2EB4D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A67D4A86-6ACD-40B8-968B-775ACF2EB4D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A67D4A86-6ACD-40B8-968B-775ACF2EB4D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A67D4A86-6ACD-40B8-968B-775ACF2EB4D7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{42ADEA24-723D-4F7E-B1F0-48B9C67CDEB2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{42ADEA24-723D-4F7E-B1F0-48B9C67CDEB2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{42ADEA24-723D-4F7E-B1F0-48B9C67CDEB2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{42ADEA24-723D-4F7E-B1F0-48B9C67CDEB2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
