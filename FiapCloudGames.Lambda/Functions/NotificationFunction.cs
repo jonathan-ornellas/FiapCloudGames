@@ -9,11 +9,16 @@ using Newtonsoft.Json;
 public class NotificationFunction
 {
     private readonly IEmailService _emailService;
-    private const string RecipientEmail = "jonathan.nnt@hotmail.com";
+    private readonly string _recipientEmail;
 
     public NotificationFunction()
     {
-        _emailService = new EmailService();
+        var senderEmail = Environment.GetEnvironmentVariable("Email__SenderEmail") ?? "noreply@fiapcloudgames.com";
+        var recipientEmail = Environment.GetEnvironmentVariable("Email__RecipientEmail") ?? "jonathan.nnt@hotmail.com";
+        var awsRegion = Environment.GetEnvironmentVariable("Email__AwsRegion") ?? "us-east-1";
+        
+        _recipientEmail = recipientEmail;
+        _emailService = new EmailService(senderEmail, recipientEmail, awsRegion);
     }
 
     public async Task<string> HandlePaymentNotificationAsync(PaymentProcessedEvent @event, ILambdaContext context)
@@ -23,7 +28,7 @@ public class NotificationFunction
         try
         {
             await _emailService.SendPaymentNotificationAsync(
-                recipientEmail: RecipientEmail,
+                recipientEmail: _recipientEmail,
                 userId: @event.UserId,
                 gameId: @event.GameId,
                 amount: @event.Amount,
@@ -35,7 +40,7 @@ public class NotificationFunction
                 success = true,
                 message = "Payment notification sent successfully",
                 paymentId = @event.PaymentId,
-                recipientEmail = RecipientEmail,
+                recipientEmail = _recipientEmail,
                 timestamp = DateTime.UtcNow
             };
 
@@ -61,7 +66,7 @@ public class NotificationFunction
         try
         {
             await _emailService.SendPaymentNotificationAsync(
-                recipientEmail: RecipientEmail,
+                recipientEmail: _recipientEmail,
                 userId: @event.UserId.ToString(),
                 gameId: @event.GameId.ToString(),
                 amount: @event.Amount,
@@ -74,7 +79,7 @@ public class NotificationFunction
                 message = "Purchase notification sent successfully",
                 userId = @event.UserId,
                 gameId = @event.GameId,
-                recipientEmail = RecipientEmail,
+                recipientEmail = _recipientEmail,
                 timestamp = DateTime.UtcNow
             };
 
