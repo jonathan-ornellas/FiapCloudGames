@@ -91,10 +91,17 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-using (var scope = app.Services.CreateScope())
+if (app.Environment.IsDevelopment())
 {
-    var db = scope.ServiceProvider.GetRequiredService<UsersContext>();
-    db.Database.Migrate();
+    var runMigrations = builder.Configuration.GetValue<bool>("RunMigrations", false);
+    if (runMigrations)
+    {
+        using (var scope = app.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<UsersContext>();
+            db.Database.Migrate();
+        }
+    }
 }
 
 app.Run();
