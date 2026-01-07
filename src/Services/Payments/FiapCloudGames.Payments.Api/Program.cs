@@ -10,6 +10,9 @@ using Serilog;
 using System.Text;
 using FiapCloudGames.Payments.Business;
 using FiapCloudGames.Domain;
+using FluentValidation.AspNetCore;
+using FluentValidation;
+using FiapCloudGames.Payments.Api.DTOs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +25,8 @@ builder.Host.UseSerilog();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<FiapCloudGames.Payments.Api.Validators.ProcessPaymentDtoValidator>();
 
 builder.Services.AddSwaggerGen(c =>
 {

@@ -1,6 +1,7 @@
 using FiapCloudGames.Domain.Entities;
 using FiapCloudGames.Games.Api.Data;
 using FiapCloudGames.Games.Business;
+using Microsoft.EntityFrameworkCore;
 
 namespace FiapCloudGames.Games.Api.Repositories
 {
@@ -15,7 +16,13 @@ namespace FiapCloudGames.Games.Api.Repositories
 
         public async Task AddAsync(Game game, CancellationToken ct = default)
         {
-            await _context.Games.AddAsync(new Models.Game { Title = game.Title, Description = game.Description, Genre = game.Genre, Price = game.Price.Value, Rating = (int)game.Rating }, ct);
+            _context.Games.Add(game);
+            await Task.CompletedTask;
+        }
+
+        public async Task<IEnumerable<Game>> GetAllAsync(CancellationToken ct = default)
+        {
+            return await _context.Games.ToListAsync(ct);
         }
     }
 }

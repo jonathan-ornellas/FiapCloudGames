@@ -22,5 +22,11 @@ namespace FiapCloudGames.Payments.Business
             await _payments.AddAsync(payment, ct);
             await _uow.SaveChangesAsync(ct);
         }
+
+        public async Task ProcessPaymentAsync(Payment payment, CancellationToken ct = default)
+        {
+            // Lógica de processamento de pagamento aqui
+            await Task.CompletedTask;
+        }
     }
 }

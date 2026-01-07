@@ -1,7 +1,7 @@
-namespace FiapCloudGames.Users.Api.Data;
-
-using FiapCloudGames.Users.Api.Models;
+using FiapCloudGames.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+
+namespace FiapCloudGames.Users.Api.Data;
 
 public class UsersContext : DbContext
 {
@@ -15,6 +15,12 @@ public class UsersContext : DbContext
     {
         modelBuilder.Entity<User>()
             .HasKey(u => u.Id);
+
+        modelBuilder.Entity<User>()
+            .Property(u => u.Email)
+            .HasConversion(
+                v => v.Value,
+                v => new FiapCloudGames.Domain.ValueObjects.Email(v));
 
         modelBuilder.Entity<User>()
             .HasIndex(u => u.Email)

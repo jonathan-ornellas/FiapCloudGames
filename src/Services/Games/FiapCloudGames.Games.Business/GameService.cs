@@ -25,5 +25,10 @@ namespace FiapCloudGames.Games.Business
             await _games.AddAsync(game, ct);
             await _uow.SaveChangesAsync(ct);
         }
+
+        public async Task<IEnumerable<Game>> GetAllAsync(CancellationToken ct = default)
+        {
+            return await _games.GetAllAsync(ct);
+        }
     }
 }

@@ -1,118 +1,96 @@
-using FiapCloudGames.Users.Api.Data;
-using FiapCloudGames.Users.Api.Repositories;
-using FiapCloudGames.Users.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
-using Serilog;
 using System.Text;
+using FiapCloudGames.Users.Api.Data;
+using Microsoft.EntityFrameworkCore;
 using FiapCloudGames.Users.Business;
 using FiapCloudGames.Users.Business.Services;
 using FiapCloudGames.Domain;
+using FluentValidation.AspNetCore;
+using FluentValidation;
+using FiapCloudGames.Users.Api.DTOs;
+using FiapCloudGames.Users.Api.Repositories;
+using FiapCloudGames.Users.Api.Services;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Debug()
-    .WriteTo.Console()
-    .CreateLogger();
+// Add services to the container.
+builder.Services.AddDbContext<UsersContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Host.UseSerilog();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IPasswordHasherService, PasswordHasherService>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<ITokenService, FiapCloudGames.Users.Api.Services.TokenService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<FiapCloudGames.Users.Api.Validators.RegisterUserDtoValidator>();
 
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "Users API", Version = "v1" });
     var securityScheme = new OpenApiSecurityScheme
     {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
+        Name = "JWT Authentication",
+        Description = "Enter JWT Bearer token **_only_**",
         In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer", // must be lower case
+        BearerFormat = "JWT",
         Reference = new OpenApiReference
         {
-            Type = ReferenceType.SecurityScheme,
-            Id = "Bearer"
+            Id = JwtBearerDefaults.AuthenticationScheme,
+            Type = ReferenceType.SecurityScheme
         }
     };
-    c.AddSecurityDefinition("Bearer", securityScheme);
+    c.AddSecurityDefinition(securityScheme.Reference.Id, securityScheme);
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
-        { securityScheme, Array.Empty<string>() }
+        {securityScheme, new string[] {}}
     });
 });
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
-
-builder.Services.AddDbContext<UsersContext>(options =>
-    options.UseSqlServer(connectionString));
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(o =>
-    {
-        var cfg = builder.Configuration;
-        o.TokenValidationParameters = new()
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = cfg["Jwt:Issuer"],
-            ValidAudience = cfg["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(cfg["Jwt:Key"]!))
-        };
-    });
-
-builder.Services.AddAuthorization();
-
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddScoped<IPasswordHasherService, PasswordHasherService>();
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-
-builder.Services.AddCors(options =>
+var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"]);
+builder.Services.AddAuthentication(x =>
 {
-    options.AddPolicy("AllowAll", builder =>
+    x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(x =>
+{
+    x.RequireHttpsMetadata = false;
+    x.SaveToken = true;
+    x.TokenValidationParameters = new TokenValidationParameters
     {
-        builder.AllowAnyOrigin()
-            .AllowAnyMethod()
-            .AllowAnyHeader();
-    });
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ValidateIssuer = false,
+        ValidateAudience = false
+    };
 });
 
 var app = builder.Build();
 
-app.UseSwagger();
-app.UseSwaggerUI();
-
-app.UseCors("AllowAll");
-app.UseHttpsRedirection();
-app.UseAuthentication();
-app.UseAuthorization();
-app.MapControllers();
-
+// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    var runMigrations = builder.Configuration.GetValue<bool>("RunMigrations", false);
-    if (runMigrations)
-    {
-        using (var scope = app.Services.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<UsersContext>();
-            db.Database.Migrate();
-        }
-    }
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
+
+app.UseHttpsRedirection();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapGet("/admin", () => "Hello Admin!").RequireAuthorization("Admin");
+app.MapGet("/user", () => "Hello User!").RequireAuthorization();
+
+app.MapControllers();
 
 app.Run();
-
-namespace FiapCloudGames.Users.Api
-{
-    public partial class Program { }
-}

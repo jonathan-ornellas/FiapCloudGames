@@ -1,7 +1,7 @@
-namespace FiapCloudGames.Games.Api.Data;
-
-using FiapCloudGames.Games.Api.Models;
+using FiapCloudGames.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+
+namespace FiapCloudGames.Games.Api.Data;
 
 public class GamesContext : DbContext
 {
@@ -17,8 +17,10 @@ public class GamesContext : DbContext
             .HasKey(g => g.Id);
 
         modelBuilder.Entity<Game>()
-            .HasIndex(g => g.Title)
-            .IsUnique();
+            .Property(g => g.Price)
+            .HasConversion(
+                v => v.Value,
+                v => new FiapCloudGames.Domain.ValueObjects.Money(v));
 
         base.OnModelCreating(modelBuilder);
     }

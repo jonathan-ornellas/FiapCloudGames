@@ -17,19 +17,18 @@ namespace FiapCloudGames.Users.Api.Repositories
 
         public async Task AddAsync(User user, CancellationToken ct = default)
         {
-            await _context.Users.AddAsync(new Models.User { Name = user.Name, Email = user.Email.Value, PasswordHash = user.Password }, ct);
+            _context.Users.Add(user);
+            await Task.CompletedTask;
         }
 
         public async Task<bool> EmailExistsAsync(Email email, CancellationToken ct = default)
         {
-            return await _context.Users.AnyAsync(u => u.Email == email.Value, ct);
+            return await _context.Users.AnyAsync(u => u.Email == email, ct);
         }
 
         public async Task<User?> GetByEmailAsync(Email email, CancellationToken ct = default)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email.Value, ct);
-            if (user == null) return null;
-            return new User(user.Name, new Email(user.Email), user.PasswordHash);
+            return await _context.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
         }
     }
 }
