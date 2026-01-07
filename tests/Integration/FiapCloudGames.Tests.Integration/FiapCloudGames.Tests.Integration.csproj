@@ -20,10 +20,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../FiapCloudGames.Users.Api/FiapCloudGames.Users.Api.csproj" />
-    <ProjectReference Include="../FiapCloudGames.Games.Api/FiapCloudGames.Games.Api.csproj" />
-    <ProjectReference Include="../FiapCloudGames.Payments.Api/FiapCloudGames.Payments.Api.csproj" />
-    <ProjectReference Include="../FiapCloudGames.Shared/FiapCloudGames.Shared.csproj" />
+    <ProjectReference Include="..\..\..\src\Services\Users\FiapCloudGames.Users.Api\FiapCloudGames.Users.Api.csproj" />
+    <ProjectReference Include="..\..\..\src\Services\Games\FiapCloudGames.Games.Api\FiapCloudGames.Games.Api.csproj" />
+    <ProjectReference Include="..\..\..\src\Services\Payments\FiapCloudGames.Payments.Api\FiapCloudGames.Payments.Api.csproj" />
+    <ProjectReference Include="..\..\..\src\Shared\FiapCloudGames.Shared\FiapCloudGames.Shared.csproj" />
   </ItemGroup>
 
 </Project>

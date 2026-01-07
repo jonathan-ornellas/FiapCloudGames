@@ -32,10 +32,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\FiapCloudGames.Shared\FiapCloudGames.Shared.csproj" />
-    <ProjectReference Include="..\FiapCloudGames.EventSourcing\FiapCloudGames.EventSourcing.csproj" />
+    <ProjectReference Include="..\..\..\Shared\FiapCloudGames.Shared\FiapCloudGames.Shared.csproj" />
+    <ProjectReference Include="..\..\..\Shared\FiapCloudGames.EventSourcing\FiapCloudGames.EventSourcing.csproj" />
     <ProjectReference Include="..\FiapCloudGames.Games.Business\FiapCloudGames.Games.Business.csproj" />
-    <ProjectReference Include="..\FiapCloudGames.Domain\FiapCloudGames.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Shared\FiapCloudGames.Domain\FiapCloudGames.Domain.csproj" />
   </ItemGroup>
 
 </Project>

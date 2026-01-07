@@ -19,13 +19,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../FiapCloudGames.Users.Api/FiapCloudGames.Users.Api.csproj" />
-    <ProjectReference Include="../FiapCloudGames.Games.Api/FiapCloudGames.Games.Api.csproj" />
-    <ProjectReference Include="../FiapCloudGames.Payments.Api/FiapCloudGames.Payments.Api.csproj" />
-    <ProjectReference Include="../FiapCloudGames.Shared/FiapCloudGames.Shared.csproj" />
-    <ProjectReference Include="..\FiapCloudGames.Users.Business\FiapCloudGames.Users.Business.csproj" />
-    <ProjectReference Include="..\FiapCloudGames.Games.Business\FiapCloudGames.Games.Business.csproj" />
-    <ProjectReference Include="..\FiapCloudGames.Payments.Business\FiapCloudGames.Payments.Business.csproj" />
+    <ProjectReference Include="..\..\..\src\Services\Users\FiapCloudGames.Users.Api\FiapCloudGames.Users.Api.csproj" />
+    <ProjectReference Include="..\..\..\src\Services\Games\FiapCloudGames.Games.Api\FiapCloudGames.Games.Api.csproj" />
+    <ProjectReference Include="..\..\..\src\Services\Payments\FiapCloudGames.Payments.Api\FiapCloudGames.Payments.Api.csproj" />
+    <ProjectReference Include="..\..\..\src\Shared\FiapCloudGames.Shared\FiapCloudGames.Shared.csproj" />
+    <ProjectReference Include="..\..\..\src\Services\Users\FiapCloudGames.Users.Business\FiapCloudGames.Users.Business.csproj" />
+    <ProjectReference Include="..\..\..\src\Services\Games\FiapCloudGames.Games.Business\FiapCloudGames.Games.Business.csproj" />
+    <ProjectReference Include="..\..\..\src\Services\Payments\FiapCloudGames.Payments.Business\FiapCloudGames.Payments.Business.csproj" />
   </ItemGroup>
 
 </Project>

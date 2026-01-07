@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\FiapCloudGames.Domain\FiapCloudGames.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Shared\FiapCloudGames.Domain\FiapCloudGames.Domain.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
