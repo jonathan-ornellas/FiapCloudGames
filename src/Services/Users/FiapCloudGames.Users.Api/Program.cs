@@ -55,7 +55,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"]);
+var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"] ?? string.Empty);
 builder.Services.AddAuthentication(x =>
 {
     x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -94,3 +94,5 @@ app.MapGet("/user", () => "Hello User!").RequireAuthorization();
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }

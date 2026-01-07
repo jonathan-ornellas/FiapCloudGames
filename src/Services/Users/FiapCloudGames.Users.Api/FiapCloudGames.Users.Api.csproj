@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="Properties\launchSettings.json" />
+    <Content Include="Properties\\launchSettings.json" />
   </ItemGroup>
 
   <ItemGroup>
@@ -34,6 +34,10 @@
     <ProjectReference Include="..\..\..\Shared\FiapCloudGames.EventSourcing\FiapCloudGames.EventSourcing.csproj" />
     <ProjectReference Include="..\FiapCloudGames.Users.Business\FiapCloudGames.Users.Business.csproj" />
     <ProjectReference Include="..\..\..\Shared\FiapCloudGames.Domain\FiapCloudGames.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="FiapCloudGames.Tests.Integration" />
   </ItemGroup>
 
 </Project>

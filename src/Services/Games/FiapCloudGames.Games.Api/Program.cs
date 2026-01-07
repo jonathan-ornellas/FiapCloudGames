@@ -132,7 +132,5 @@ if (app.Environment.IsDevelopment())
 
 app.Run();
 
-namespace FiapCloudGames.Games.Api
-{
-    public partial class Program { }
-}
+
+public partial class Program { }
