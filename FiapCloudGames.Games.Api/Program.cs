@@ -2,6 +2,8 @@ using FiapCloudGames.Games.Api.Data;
 using FiapCloudGames.Games.Api.Repositories;
 using FiapCloudGames.Games.Api.Services;
 using FiapCloudGames.Shared.Elasticsearch;
+using FiapCloudGames.Shared.RabbitMQ;
+using FiapCloudGames.Shared.Events;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -81,6 +83,12 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<IGameRepository, GameRepository>();
 builder.Services.AddScoped<IGameService, GameService>();
+
+var rabbitMqHost = builder.Configuration["RabbitMq:Host"] ?? Environment.GetEnvironmentVariable("RabbitMq__Host") ?? "localhost";
+var rabbitMqUsername = builder.Configuration["RabbitMq:Username"] ?? Environment.GetEnvironmentVariable("RabbitMq__Username") ?? "guest";
+var rabbitMqPassword = builder.Configuration["RabbitMq:Password"] ?? Environment.GetEnvironmentVariable("RabbitMq__Password") ?? "guest";
+
+builder.Services.AddSingleton<IRabbitMQConsumer>(sp => new RabbitMQConsumer(rabbitMqHost, rabbitMqUsername, rabbitMqPassword));
 
 builder.Services.AddCors(options =>
 {

@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 
 public class NotificationFunction
 {
-    public async Task<string> HandlePaymentNotificationAsync(PaymentProcessedEvent @event, ILambdaContext context)
+    public async Task<string> HandlePaymentNotificationAsync(PaymentProcessedDomainEvent @event, ILambdaContext context)
     {
         context.Logger.LogLine($"Processing payment notification for payment: {@event.PaymentId}");
 

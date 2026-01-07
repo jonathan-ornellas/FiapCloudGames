@@ -5,6 +5,8 @@ using FiapCloudGames.Payments.Api.Models;
 using FiapCloudGames.Payments.Api.Repositories;
 using FiapCloudGames.EventSourcing;
 using FiapCloudGames.Shared.Models;
+using FiapCloudGames.Shared.RabbitMQ;
+using FiapCloudGames.Shared.Events;
 
 public interface IPaymentService
 {
@@ -18,11 +20,13 @@ public class PaymentService : IPaymentService
 {
     private readonly IPaymentRepository _paymentRepository;
     private readonly IEventStore _eventStore;
+    private readonly IRabbitMQPublisher _rabbitMQPublisher;
 
-    public PaymentService(IPaymentRepository paymentRepository, IEventStore eventStore)
+    public PaymentService(IPaymentRepository paymentRepository, IEventStore eventStore, IRabbitMQPublisher rabbitMQPublisher)
     {
         _paymentRepository = paymentRepository;
         _eventStore = eventStore;
+        _rabbitMQPublisher = rabbitMQPublisher;
     }
 
     public async Task<PaymentResponse> ProcessPaymentAsync(CreatePaymentRequest request)
@@ -38,7 +42,7 @@ public class PaymentService : IPaymentService
 
         var createdPayment = await _paymentRepository.CreateAsync(payment);
 
-        var @event = new PaymentProcessedEvent
+        var @event = new PaymentProcessedDomainEvent
         {
             AggregateId = createdPayment.Id,
             PaymentId = createdPayment.Id,
@@ -50,6 +54,18 @@ public class PaymentService : IPaymentService
         };
 
         await _eventStore.AppendEventAsync(@event);
+
+        var paymentEvent = new PaymentProcessedEvent
+        {
+            PaymentId = createdPayment.Id.ToString(),
+            UserId = createdPayment.UserId.ToString(),
+            GameId = createdPayment.GameId.ToString(),
+            Amount = createdPayment.Amount,
+            Status = createdPayment.Status,
+            Timestamp = DateTime.UtcNow
+        };
+
+        await _rabbitMQPublisher.PublishAsync("fiap-games", "payment.processed", paymentEvent);
 
         return MapToResponse(createdPayment);
     }
@@ -78,7 +94,7 @@ public class PaymentService : IPaymentService
 
         var updated = await _paymentRepository.UpdateAsync(payment);
 
-        var @event = new PaymentProcessedEvent
+        var @event = new PaymentProcessedDomainEvent
         {
             AggregateId = updated.Id,
             PaymentId = updated.Id,
@@ -90,6 +106,21 @@ public class PaymentService : IPaymentService
         };
 
         await _eventStore.AppendEventAsync(@event);
+
+        if (status == "Completed")
+        {
+            var paymentEvent = new PaymentProcessedEvent
+            {
+                PaymentId = updated.Id.ToString(),
+                UserId = updated.UserId.ToString(),
+                GameId = updated.GameId.ToString(),
+                Amount = updated.Amount,
+                Status = updated.Status,
+                Timestamp = DateTime.UtcNow
+            };
+
+            await _rabbitMQPublisher.PublishAsync("fiap-games", "payment.completed", paymentEvent);
+        }
 
         return MapToResponse(updated);
     }
