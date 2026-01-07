@@ -120,3 +120,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.Run();
+
+namespace FiapCloudGames.Payments.Api
+{
+    public partial class Program { }
+}
