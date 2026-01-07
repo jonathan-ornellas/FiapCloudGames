@@ -1,6 +1,5 @@
 global:
   resolve_timeout: 5m
-  slack_api_url: ''
 
 route:
   receiver: 'default'
@@ -19,19 +18,10 @@ route:
 
 receivers:
   - name: 'default'
-    webhook_configs:
-      - url: 'http://localhost:5000/alerts'
-        send_resolved: true
 
   - name: 'critical'
-    webhook_configs:
-      - url: 'http://localhost:5000/alerts/critical'
-        send_resolved: true
 
   - name: 'warning'
-    webhook_configs:
-      - url: 'http://localhost:5000/alerts/warning'
-        send_resolved: true
 
 inhibit_rules:
   - source_match:
