@@ -1,6 +1,10 @@
-# FIAP Cloud Games - Arquitetura de Microsserviços
+# FIAP Cloud Games
+
+**Projeto de Estudo - Tarefa 3 FIAP**
 
 Sistema de gerenciamento de jogos desenvolvido em .NET 8 com arquitetura de microsserviços, Elasticsearch, Event Sourcing e RabbitMQ.
+
+> ⚠️ Este é um projeto educacional desenvolvido como parte da Tarefa 3 do Tech Challenge FIAP. Não deve ser utilizado em produção sem as devidas adaptações de segurança.
 
 ## 🚀 Execução Rápida
 
@@ -22,6 +26,7 @@ Acesse:
 - Docker e Docker Compose
 - .NET 8 SDK (para desenvolvimento local)
 - Git
+- SQL Server 2022 (local ou Docker)
 
 ## 🏗️ Arquitetura
 
@@ -61,6 +66,7 @@ Acesse:
 **SQL Server (1433)**
 - 3 bancos de dados separados (Users, Games, Payments)
 - Event Store para auditoria
+- Conexão: `Trusted_Connection=true;MultipleActiveResultSets=true`
 
 **Prometheus + Grafana**
 - Monitoramento de métricas
@@ -189,7 +195,9 @@ FiapCloudGames/
 ├── FiapCloudGames.Microservices.sln   # Solução principal
 ├── docker-compose.microservices.yml   # Orquestração
 ├── azure-pipelines.yml                # CI/CD
-└── README.md                          # Este arquivo
+├── README.md                          # Este arquivo
+├── CHECKUP.md                         # Validação de requisitos
+└── LAMBDA.md                          # Documentação Lambda
 ```
 
 ## 🛠️ Tecnologias
@@ -205,6 +213,8 @@ FiapCloudGames/
 | Docker | - | Containerização |
 | Prometheus | - | Monitoramento |
 | Grafana | - | Visualização |
+| AWS Lambda | - | Serverless |
+| AWS SES | - | Email |
 
 ## 🚀 CI/CD Pipeline
 
@@ -243,15 +253,16 @@ FiapCloudGames/
 - Validação de entrada com FluentValidation
 - CORS configurado
 - HTTPS em produção
+- Secret Key configurável via appsettings
 
 ## 📝 Variáveis de Ambiente
 
 ```bash
-# Banco de dados
-ConnectionStrings__DefaultConnection=Server=...;Database=...;
+# Banco de dados (local com Trusted Connection)
+ConnectionStrings__DefaultConnection=Server=localhost;Database=FiapGameUsers;Trusted_Connection=true;MultipleActiveResultSets=true;Encrypt=false;
 
-# JWT
-Jwt__Key=sua-chave-secreta-com-32-caracteres
+# JWT Secret Key
+Jwt__Key=fiap-cloud-games-secret-key-2024-production-secure-key-minimum-32-chars
 Jwt__Issuer=fiap-cloud-games
 Jwt__Audience=fiap-cloud-games-users
 
@@ -262,6 +273,11 @@ RabbitMq__Password=guest
 
 # Elasticsearch
 Elasticsearch__Url=http://localhost:9200
+
+# Email (Lambda)
+Email__SenderEmail=noreply@fiapcloudgames.com
+Email__RecipientEmail=jonathan.nnt@hotmail.com
+Email__AwsRegion=us-east-1
 ```
 
 ## 🤝 Contribuindo
