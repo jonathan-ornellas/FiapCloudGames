@@ -1,41 +1,32 @@
-namespace FiapCloudGames.Users.Api.Controllers;
-
-using FiapCloudGames.Users.Api.DTOs;
-using FiapCloudGames.Users.Api.Services;
+using FiapCloudGames.Users.Business;
+using FiapCloudGames.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 
-[ApiController]
-[Route("api/[controller]")]
-public class AuthController : ControllerBase
+namespace FiapCloudGames.Users.Api.Controllers
 {
-    private readonly IAuthService _authService;
-
-    public AuthController(IAuthService authService)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class AuthController : ControllerBase
     {
-        _authService = authService;
-    }
+        private readonly IAuthService _authService;
 
-    [HttpPost("register")]
-    public async Task<ActionResult<LoginResponse>> Register([FromBody] RegisterRequest request)
-    {
-        try
+        public AuthController(IAuthService authService)
         {
-            var response = await _authService.RegisterAsync(request);
-            return Ok(response);
+            _authService = authService;
         }
-        catch (InvalidOperationException ex)
+
+        [HttpPost("register")]
+        public async Task<IActionResult> Register(User user)
         {
-            return BadRequest(new { message = ex.Message });
+            var token = await _authService.RegisterAsync(user);
+            return Ok(new { Token = token });
         }
-    }
 
-    [HttpPost("login")]
-    public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
-    {
-        var response = await _authService.LoginAsync(request);
-        if (response == null)
-            return Unauthorized(new { message = "Invalid credentials" });
-
-        return Ok(response);
+        [HttpPost("login")]
+        public async Task<IActionResult> Login(string email, string password)
+        {
+            var token = await _authService.LoginAsync(email, password);
+            return Ok(new { Token = token });
+        }
     }
 }

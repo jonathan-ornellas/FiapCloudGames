@@ -1,6 +1,5 @@
 using FiapCloudGames.Payments.Api.Data;
 using FiapCloudGames.Payments.Api.Repositories;
-using FiapCloudGames.Payments.Api.Services;
 using FiapCloudGames.EventSourcing;
 using FiapCloudGames.Shared.RabbitMQ;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -9,6 +8,8 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using System.Text;
+using FiapCloudGames.Payments.Business;
+using FiapCloudGames.Domain;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -74,6 +75,7 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IEventStore, EventStoreRepository>();
 
 var rabbitMqHost = builder.Configuration["RabbitMq:Host"] ?? Environment.GetEnvironmentVariable("RabbitMq__Host") ?? "localhost";

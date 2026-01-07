@@ -25,6 +25,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FiapCloudGames.Tests.Integr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FiapCloudGames.Tests.Unit", "FiapCloudGames.Tests.Unit\FiapCloudGames.Tests.Unit.csproj", "{42ADEA24-723D-4F7E-B1F0-48B9C67CDEB2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FiapCloudGames.Domain", "FiapCloudGames.Domain\FiapCloudGames.Domain.csproj", "{FCB34B32-735E-489B-8905-0DEC9264DB83}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FiapCloudGames.Users.Business", "FiapCloudGames.Users.Business\FiapCloudGames.Users.Business.csproj", "{5E45F7FD-E07D-4422-9BED-5DAE82AF6CFA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FiapCloudGames.Games.Business", "FiapCloudGames.Games.Business\FiapCloudGames.Games.Business.csproj", "{27EEB21C-29D0-4414-9EF8-35C251AF3C27}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FiapCloudGames.Payments.Business", "FiapCloudGames.Payments.Business\FiapCloudGames.Payments.Business.csproj", "{79E6C291-2066-4929-9F42-235F790C9519}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -63,6 +71,22 @@ Global
 		{42ADEA24-723D-4F7E-B1F0-48B9C67CDEB2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{42ADEA24-723D-4F7E-B1F0-48B9C67CDEB2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{42ADEA24-723D-4F7E-B1F0-48B9C67CDEB2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FCB34B32-735E-489B-8905-0DEC9264DB83}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FCB34B32-735E-489B-8905-0DEC9264DB83}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FCB34B32-735E-489B-8905-0DEC9264DB83}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FCB34B32-735E-489B-8905-0DEC9264DB83}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5E45F7FD-E07D-4422-9BED-5DAE82AF6CFA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5E45F7FD-E07D-4422-9BED-5DAE82AF6CFA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5E45F7FD-E07D-4422-9BED-5DAE82AF6CFA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5E45F7FD-E07D-4422-9BED-5DAE82AF6CFA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{27EEB21C-29D0-4414-9EF8-35C251AF3C27}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{27EEB21C-29D0-4414-9EF8-35C251AF3C27}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{27EEB21C-29D0-4414-9EF8-35C251AF3C27}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{27EEB21C-29D0-4414-9EF8-35C251AF3C27}.Release|Any CPU.Build.0 = Release|Any CPU
+		{79E6C291-2066-4929-9F42-235F790C9519}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79E6C291-2066-4929-9F42-235F790C9519}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79E6C291-2066-4929-9F42-235F790C9519}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79E6C291-2066-4929-9F42-235F790C9519}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

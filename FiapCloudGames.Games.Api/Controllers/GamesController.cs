@@ -1,84 +1,25 @@
-namespace FiapCloudGames.Games.Api.Controllers;
-
-using FiapCloudGames.Games.Api.DTOs;
-using FiapCloudGames.Games.Api.Services;
-using Microsoft.AspNetCore.Authorization;
+using FiapCloudGames.Games.Business;
+using FiapCloudGames.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 
-[ApiController]
-[Route("api/[controller]")]
-public class GamesController : ControllerBase
+namespace FiapCloudGames.Games.Api.Controllers
 {
-    private readonly IGameService _gameService;
-
-    public GamesController(IGameService gameService)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class GamesController : ControllerBase
     {
-        _gameService = gameService;
-    }
+        private readonly IGameService _gameService;
 
-    [HttpPost]
-    [Authorize]
-    public async Task<ActionResult<GameResponse>> CreateGame([FromBody] CreateGameRequest request)
-    {
-        var response = await _gameService.CreateGameAsync(request);
-        return CreatedAtAction(nameof(GetGameById), new { id = response.Id }, response);
-    }
-
-    [HttpGet("{id}")]
-    public async Task<ActionResult<GameResponse>> GetGameById(Guid id)
-    {
-        var game = await _gameService.GetGameByIdAsync(id);
-        if (game == null)
-            return NotFound();
-
-        return Ok(game);
-    }
-
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<GameResponse>>> GetAllGames()
-    {
-        var games = await _gameService.GetAllGamesAsync();
-        return Ok(games);
-    }
-
-    [HttpGet("search")]
-    public async Task<ActionResult<IEnumerable<GameResponse>>> SearchGames([FromQuery] string query)
-    {
-        var results = await _gameService.SearchGamesAsync(query);
-        return Ok(results);
-    }
-
-    [HttpGet("recommendations/{userId}")]
-    [Authorize]
-    public async Task<ActionResult<RecommendationResponse>> GetRecommendations(Guid userId)
-    {
-        var recommendations = await _gameService.GetRecommendationsAsync(userId);
-        return Ok(recommendations);
-    }
-
-    [HttpPut("{id}")]
-    [Authorize]
-    public async Task<ActionResult<GameResponse>> UpdateGame(Guid id, [FromBody] UpdateGameRequest request)
-    {
-        try
+        public GamesController(IGameService gameService)
         {
-            var response = await _gameService.UpdateGameAsync(id, request);
-            return Ok(response);
+            _gameService = gameService;
         }
-        catch (InvalidOperationException ex)
+
+        [HttpPost]
+        public async Task<IActionResult> Create(Game game)
         {
-            return NotFound(new { message = ex.Message });
+            await _gameService.CreateAsync(game);
+            return Ok();
         }
-    }
-
-    [HttpDelete("{id}")]
-    [Authorize]
-    public async Task<IActionResult> DeleteGame(Guid id)
-    {
-        var result = await _gameService.DeleteGameAsync(id);
-        if (!result)
-            return NotFound();
-
-        return NoContent();
     }
 }

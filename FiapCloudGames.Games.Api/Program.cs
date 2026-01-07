@@ -1,9 +1,7 @@
 using FiapCloudGames.Games.Api.Data;
 using FiapCloudGames.Games.Api.Repositories;
-using FiapCloudGames.Games.Api.Services;
 using FiapCloudGames.Shared.Elasticsearch;
 using FiapCloudGames.Shared.RabbitMQ;
-using FiapCloudGames.Shared.Events;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -11,6 +9,8 @@ using Microsoft.OpenApi.Models;
 using Nest;
 using Serilog;
 using System.Text;
+using FiapCloudGames.Games.Business;
+using FiapCloudGames.Domain;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -83,6 +83,7 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<IGameRepository, GameRepository>();
 builder.Services.AddScoped<IGameService, GameService>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 var rabbitMqHost = builder.Configuration["RabbitMq:Host"] ?? Environment.GetEnvironmentVariable("RabbitMq__Host") ?? "localhost";
 var rabbitMqUsername = builder.Configuration["RabbitMq:Username"] ?? Environment.GetEnvironmentVariable("RabbitMq__Username") ?? "guest";

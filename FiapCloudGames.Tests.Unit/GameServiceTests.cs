@@ -1,99 +1,77 @@
-using Xunit;
+using FiapCloudGames.Games.Business;
+using FiapCloudGames.Domain.Entities;
+using FiapCloudGames.Domain.ValueObjects;
+using Moq;
 using FluentAssertions;
+using FiapCloudGames.Domain;
+using Xunit;
 
 namespace FiapCloudGames.Tests.Unit;
 
 public class GameServiceTests
 {
-    [Fact]
-    public void ValidateGamePrice_WithPositivePrice_ShouldReturnTrue()
-    {
-        var price = 49.99m;
-        var isValid = price > 0;
+    private readonly Mock<IGameRepository> _gameRepositoryMock;
+    private readonly Mock<IUnitOfWork> _unitOfWorkMock;
+    private readonly GameService _gameService;
 
-        isValid.Should().BeTrue();
+    public GameServiceTests()
+    {
+        _gameRepositoryMock = new Mock<IGameRepository>();
+        _unitOfWorkMock = new Mock<IUnitOfWork>();
+
+        _gameService = new GameService(_gameRepositoryMock.Object, _unitOfWorkMock.Object);
     }
 
     [Fact]
-    public void ValidateGamePrice_WithNegativePrice_ShouldReturnFalse()
+    public async Task CreateAsync_WithValidGame_ShouldSucceed()
     {
-        var price = -10m;
-        var isValid = price > 0;
+        // Arrange
+        var game = new Game("Test Game", "Description", "Action", new Money(59.99m), 9.0);
 
-        isValid.Should().BeFalse();
+        // Act
+        await _gameService.CreateAsync(game);
+
+        // Assert
+        _gameRepositoryMock.Verify(r => r.AddAsync(game, It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWorkMock.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public void ValidateGamePrice_WithZeroPrice_ShouldReturnFalse()
+    public async Task CreateAsync_WithZeroPrice_ShouldThrowArgumentException()
     {
-        var price = 0m;
-        var isValid = price > 0;
+        // Arrange
+        var game = new Game("Test Game", "Description", "Action", new Money(0), 9.0);
 
-        isValid.Should().BeFalse();
+        // Act
+        Func<Task> act = async () => await _gameService.CreateAsync(game);
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("Preço do jogo deve ser maior que zero");
     }
 
     [Fact]
-    public void ValidateGameRating_WithValidRating_ShouldReturnTrue()
+    public async Task CreateAsync_WithNegativePrice_ShouldThrowArgumentException()
     {
-        var rating = 8.5;
-        var isValid = rating >= 0 && rating <= 10;
+        // Arrange
+        var game = new Game("Test Game", "Description", "Action", new Money(-10), 9.0);
 
-        isValid.Should().BeTrue();
+        // Act
+        Func<Task> act = async () => await _gameService.CreateAsync(game);
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("Valor monetário não pode ser negativo");
     }
 
     [Fact]
-    public void ValidateGameRating_WithRatingBelowZero_ShouldReturnFalse()
+    public async Task CreateAsync_WithInvalidRating_ShouldThrowArgumentException()
     {
-        var rating = -1.0;
-        var isValid = rating >= 0 && rating <= 10;
+        // Arrange
+        var game = new Game("Test Game", "Description", "Action", new Money(59.99m), 11.0);
 
-        isValid.Should().BeFalse();
-    }
+        // Act
+        Func<Task> act = async () => await _gameService.CreateAsync(game);
 
-    [Fact]
-    public void ValidateGameRating_WithRatingAboveTen_ShouldReturnFalse()
-    {
-        var rating = 11.0;
-        var isValid = rating >= 0 && rating <= 10;
-
-        isValid.Should().BeFalse();
-    }
-
-    [Fact]
-    public void ValidateGameTitle_WithValidTitle_ShouldReturnTrue()
-    {
-        var title = "Test Game";
-        var isValid = !string.IsNullOrWhiteSpace(title) && title.Length > 0;
-
-        isValid.Should().BeTrue();
-    }
-
-    [Fact]
-    public void ValidateGameTitle_WithEmptyTitle_ShouldReturnFalse()
-    {
-        var title = string.Empty;
-        var isValid = !string.IsNullOrWhiteSpace(title);
-
-        isValid.Should().BeFalse();
-    }
-
-    [Fact]
-    public void CalculateDiscount_WithValidPercentage_ShouldReturnCorrectPrice()
-    {
-        var originalPrice = 100m;
-        var discountPercentage = 10;
-        var discountedPrice = originalPrice * (1 - (discountPercentage / 100m));
-
-        discountedPrice.Should().Be(90m);
-    }
-
-    [Fact]
-    public void CalculateDiscount_With50Percent_ShouldReturnHalfPrice()
-    {
-        var originalPrice = 100m;
-        var discountPercentage = 50;
-        var discountedPrice = originalPrice * (1 - (discountPercentage / 100m));
-
-        discountedPrice.Should().Be(50m);
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("Rating do jogo deve ser entre 0 e 10");
     }
 }
