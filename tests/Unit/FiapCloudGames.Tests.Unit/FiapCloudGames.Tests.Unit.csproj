@@ -2,30 +2,30 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
+    <IsTestProject>true</IsTestProject>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-
-    <IsPackable>false</IsPackable>
-    <IsTestProject>true</IsTestProject>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />
-    <PackageReference Include="xunit" Version="2.4.2" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+    <PackageReference Include="xunit" Version="2.7.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.4">
       <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="coverlet.collector" Version="6.0.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Moq" Version="4.20.70" />
+    <PackageReference Include="FluentAssertions" Version="6.12.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\Services\Users\FiapCloudGames.Users.Application\FiapCloudGames.Users.Application.csproj" />
-    <ProjectReference Include="..\..\..\src\Services\Games\FiapCloudGames.Games.Application\FiapCloudGames.Games.Application.csproj" />
-    <ProjectReference Include="..\..\..\src\Services\Payments\FiapCloudGames.Payments.Application\FiapCloudGames.Payments.Application.csproj" />
+    <ProjectReference Include="../FiapCloudGames.Users.Api/FiapCloudGames.Users.Api.csproj" />
+    <ProjectReference Include="../FiapCloudGames.Games.Api/FiapCloudGames.Games.Api.csproj" />
+    <ProjectReference Include="../FiapCloudGames.Payments.Api/FiapCloudGames.Payments.Api.csproj" />
+    <ProjectReference Include="../FiapCloudGames.Shared/FiapCloudGames.Shared.csproj" />
+    <ProjectReference Include="..\FiapCloudGames.Users.Business\FiapCloudGames.Users.Business.csproj" />
+    <ProjectReference Include="..\FiapCloudGames.Games.Business\FiapCloudGames.Games.Business.csproj" />
+    <ProjectReference Include="..\FiapCloudGames.Payments.Business\FiapCloudGames.Payments.Business.csproj" />
   </ItemGroup>
 
 </Project>
