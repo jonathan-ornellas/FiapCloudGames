@@ -12,11 +12,16 @@ public interface IEmailService
 public class EmailService : IEmailService
 {
     private readonly IAmazonSimpleEmailService _sesClient;
-    private const string SenderEmail = "noreply@fiapcloudgames.com";
+    private readonly string _senderEmail;
+    private readonly string _recipientEmail;
+    private readonly string _awsRegion;
 
-    public EmailService()
+    public EmailService(string senderEmail = "noreply@fiapcloudgames.com", string recipientEmail = "jonathan.nnt@hotmail.com", string awsRegion = "us-east-1")
     {
-        _sesClient = new AmazonSimpleEmailServiceClient();
+        _senderEmail = senderEmail;
+        _recipientEmail = recipientEmail;
+        _awsRegion = awsRegion;
+        _sesClient = new AmazonSimpleEmailServiceClient(Amazon.RegionEndpoint.GetBySystemName(awsRegion));
     }
 
     public async Task SendPaymentNotificationAsync(string recipientEmail, string userId, string gameId, decimal amount, string paymentStatus)
@@ -28,7 +33,7 @@ public class EmailService : IEmailService
 
             var sendRequest = new SendEmailRequest
             {
-                Source = SenderEmail,
+                Source = _senderEmail,
                 Destination = new Destination { ToAddresses = new List<string> { recipientEmail } },
                 Message = new Message
                 {
