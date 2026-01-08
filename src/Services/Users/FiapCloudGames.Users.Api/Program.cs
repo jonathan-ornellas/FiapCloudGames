@@ -12,8 +12,18 @@ using FiapCloudGames.Users.Api.DTOs;
 using FiapCloudGames.Users.Api.Repositories;
 using FiapCloudGames.Users.Api.Services;
 using Microsoft.OpenApi.Models;
+using Serilog;
+using FiapCloudGames.Shared.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Debug()
+    .WriteTo.Console()
+    .Enrich.FromLogContext()
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 // Add services to the container.
 builder.Services.AddDbContext<UsersContext>(options =>
@@ -40,7 +50,7 @@ builder.Services.AddSwaggerGen(c =>
         Description = "Enter JWT Bearer token **_only_**",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.Http,
-        Scheme = "bearer", // must be lower case
+        Scheme = "bearer",
         BearerFormat = "JWT",
         Reference = new OpenApiReference
         {
@@ -75,6 +85,8 @@ builder.Services.AddAuthentication(x =>
 });
 
 var app = builder.Build();
+
+app.UseCustomExceptionHandler();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

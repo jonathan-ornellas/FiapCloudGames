@@ -11,6 +11,8 @@
     <PackageReference Include="Elasticsearch.Net" Version="7.17.5" />
     <PackageReference Include="MediatR" Version="12.2.0" />
     <PackageReference Include="RabbitMQ.Client" Version="6.8.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
   </ItemGroup>
 
 </Project>

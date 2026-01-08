@@ -14,12 +14,14 @@ using FiapCloudGames.Domain;
 using FluentValidation.AspNetCore;
 using FluentValidation;
 using FiapCloudGames.Games.Api.DTOs;
+using FiapCloudGames.Shared.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Debug()
     .WriteTo.Console()
+    .Enrich.FromLogContext()
     .CreateLogger();
 
 builder.Host.UseSerilog();
@@ -107,6 +109,8 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+app.UseCustomExceptionHandler();
 
 app.UseSwagger();
 app.UseSwaggerUI();
