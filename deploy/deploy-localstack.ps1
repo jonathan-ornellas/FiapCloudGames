@@ -28,6 +28,9 @@ $Image         = "$ImageName`:$Tag"
 $env:AWS_ACCESS_KEY_ID     = "test"
 $env:AWS_SECRET_ACCESS_KEY = "test"
 $env:AWS_DEFAULT_REGION    = $Region
+# Evita o checksum CRC64NVME (AWS CLI v2 nova) que o LocalStack 3.8.1 rejeita.
+$env:AWS_REQUEST_CHECKSUM_CALCULATION = "when_required"
+$env:AWS_RESPONSE_CHECKSUM_VALIDATION = "when_required"
 
 function Write-Step($msg) { Write-Host "`n=== $msg ===" -ForegroundColor Cyan }
 

@@ -23,6 +23,9 @@ CONTAINER_PORT=8080
 export AWS_ACCESS_KEY_ID=test
 export AWS_SECRET_ACCESS_KEY=test
 export AWS_DEFAULT_REGION="$REGION"
+# Evita o checksum CRC64NVME (AWS CLI v2 nova) que o LocalStack 3.8.1 rejeita.
+export AWS_REQUEST_CHECKSUM_CALCULATION=when_required
+export AWS_RESPONSE_CHECKSUM_VALIDATION=when_required
 
 step() { echo -e "\n=== $1 ==="; }
 
