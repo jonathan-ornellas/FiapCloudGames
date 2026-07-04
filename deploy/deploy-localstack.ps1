@@ -1,5 +1,6 @@
 <#
-Deploy da API no LocalStack (ECR local) + SQL Server, com smoke test em /health.
+Deploy da API no LocalStack: publica o artefato (imagem) no S3 e sobe o
+container + SQL Server, com smoke test em /health.
 Uso: ./deploy/deploy-localstack.ps1 -ImageName "seuusuario/fiapcloudgames" -Tag "latest"
 #>
 
@@ -11,17 +12,17 @@ param(
 # Continue: stderr de aws/docker nao derruba o script (checamos $LASTEXITCODE).
 $ErrorActionPreference = "Continue"
 
-$Region          = "us-east-1"
-$EcrRepo         = "fiapcloudgames"
-$LocalStackUrl   = "http://localhost:4566"
-$EcrRegistry     = "localhost:4566"
-$EcrImage        = "$EcrRegistry/$EcrRepo`:$Tag"
-$Network         = "fiap-net"
-$SqlContainer    = "fiap-sqlserver"
-$ApiContainer    = "fiap-api"
-$SaPassword      = "Your_password123"
-$HostPort        = 8080
-$ContainerPort   = 8080
+$Region        = "us-east-1"
+$Bucket        = "fiapcloudgames-artifacts"
+$ArtifactFile  = "fiapcloudgames-$Tag.tar"
+$LocalStackUrl = "http://localhost:4566"
+$Network       = "fiap-net"
+$SqlContainer  = "fiap-sqlserver"
+$ApiContainer  = "fiap-api"
+$SaPassword    = "Your_password123"
+$HostPort      = 8080
+$ContainerPort = 8080
+$Image         = "$ImageName`:$Tag"
 
 # Credenciais fake exigidas pela AWS CLI (LocalStack aceita qualquer valor).
 $env:AWS_ACCESS_KEY_ID     = "test"
@@ -40,7 +41,7 @@ function Invoke-Aws {
     }
 }
 
-Write-Step "1/7 Verificando o LocalStack"
+Write-Step "1/6 Verificando o LocalStack"
 try {
     Invoke-RestMethod -Uri "$LocalStackUrl/_localstack/health" -TimeoutSec 10 | Out-Null
     Write-Host "LocalStack OK." -ForegroundColor Green
@@ -49,31 +50,25 @@ try {
     exit 1
 }
 
-Write-Step "2/7 Baixando a imagem $ImageName`:$Tag"
-docker pull "$ImageName`:$Tag"
+Write-Step "2/6 Baixando a imagem $Image"
+docker pull $Image
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Nao baixou do Docker Hub; tentando imagem local." -ForegroundColor Yellow
 }
 
-Write-Step "3/7 Criando repositorio ECR '$EcrRepo'"
-Invoke-Aws ecr create-repository --repository-name $EcrRepo | Out-Null
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "Repositorio ECR criado." -ForegroundColor Green
-} else {
-    Write-Host "Repositorio ECR ja existe (ok)." -ForegroundColor Yellow
-}
+Write-Step "3/6 Publicando o artefato no S3 (bucket '$Bucket')"
+Invoke-Aws s3 mb "s3://$Bucket" | Out-Null
+docker save $Image -o $ArtifactFile
+if ($LASTEXITCODE -ne 0) { Write-Error "Falha ao exportar a imagem (docker save)."; exit 1 }
+Invoke-Aws s3 cp $ArtifactFile "s3://$Bucket/$ArtifactFile"
+if ($LASTEXITCODE -ne 0) { Write-Error "Falha ao enviar o artefato para o S3."; exit 1 }
+Remove-Item $ArtifactFile -Force -ErrorAction SilentlyContinue
+Write-Host "Artefato publicado em s3://$Bucket/$ArtifactFile" -ForegroundColor Green
 
-Write-Step "4/7 Publicando a imagem no ECR ($EcrImage)"
-docker tag "$ImageName`:$Tag" $EcrImage
-docker push $EcrImage
-if ($LASTEXITCODE -ne 0) { Write-Error "Falha no push para o ECR do LocalStack."; exit 1 }
-Write-Host "Imagem publicada no ECR do LocalStack." -ForegroundColor Green
+Write-Step "4/6 Conferindo o artefato no S3"
+Invoke-Aws s3 ls "s3://$Bucket/"
 
-Write-Step "5/7 Baixando a imagem de volta do ECR"
-docker pull $EcrImage
-Invoke-Aws ecr describe-images --repository-name $EcrRepo
-
-Write-Step "6/7 Subindo os containers (SQL Server + API)"
+Write-Step "5/6 Subindo os containers (SQL Server + API)"
 docker network create $Network 2>$null | Out-Null
 
 docker rm -f $SqlContainer 2>$null | Out-Null
@@ -100,9 +95,9 @@ docker run -d --name $ApiContainer --network $Network `
     -e "ConnectionStrings__Default=$connStr" `
     --health-cmd "curl -f http://localhost:$ContainerPort/health || exit 1" `
     --health-interval=10s --health-retries=5 --health-start-period=20s `
-    $EcrImage | Out-Null
+    $Image | Out-Null
 
-Write-Step "7/7 Smoke test em http://localhost:$HostPort/health"
+Write-Step "6/6 Smoke test em http://localhost:$HostPort/health"
 $ok = $false
 for ($i = 1; $i -le 20; $i++) {
     Start-Sleep -Seconds 3
