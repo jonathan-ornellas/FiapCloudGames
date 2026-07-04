@@ -361,3 +361,30 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# Self-hosted GitHub Actions runner (fica só na máquina local)
+actions-runner/
+runner/
+
+# Dados locais do LocalStack
+.localstack-data/
+deploy/.localstack-data/
+
+# ---- GitHub Actions self-hosted runner (NUNCA versionar) ----
+actions-runner/
+actions-runner-*.zip
+.credentials
+.credentials_rsaparams
+.runner
+.env
+.path
+config.cmd
+run.cmd
+run-helper.cmd
+run-helper.cmd.template
+run-helper.sh.template
+svc.sh
+svc.cmd
+env.sh
+_diag/
+_work/
+externals/

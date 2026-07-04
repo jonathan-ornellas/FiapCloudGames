@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+#
+# Deploy da API Fiap Cloud Games no LocalStack (ECR local) + SQL Server.
+# Uso: ./deploy/deploy-localstack.sh <imagem> <tag>
+# Ex.: ./deploy/deploy-localstack.sh seuusuario/fiapcloudgames latest
+#
+set -euo pipefail
+
+IMAGE_NAME="${1:-fiapcloudgames}"
+TAG="${2:-latest}"
+
+REGION="us-east-1"
+ECR_REPO="fiapcloudgames"
+LOCALSTACK_URL="http://localhost:4566"
+ECR_REGISTRY="localhost:4566"
+ECR_IMAGE="${ECR_REGISTRY}/${ECR_REPO}:${TAG}"
+NETWORK="fiap-net"
+SQL_CONTAINER="fiap-sqlserver"
+API_CONTAINER="fiap-api"
+SA_PASSWORD="Your_password123"
+HOST_PORT=8080
+CONTAINER_PORT=8080
+
+export AWS_ACCESS_KEY_ID=test
+export AWS_SECRET_ACCESS_KEY=test
+export AWS_DEFAULT_REGION="$REGION"
+
+step() { echo -e "\n=== $1 ==="; }
+
+aws_cmd() {
+  if command -v awslocal >/dev/null 2>&1; then awslocal "$@";
+  else aws --endpoint-url "$LOCALSTACK_URL" "$@"; fi
+}
+
+step "1/7 Verificando o LocalStack"
+if ! curl -fs "${LOCALSTACK_URL}/_localstack/health" >/dev/null; then
+  echo "LocalStack nao respondeu em ${LOCALSTACK_URL}. Inicie com 'localstack start -d'."; exit 1
+fi
+echo "LocalStack OK."
+
+step "2/7 Baixando a imagem ${IMAGE_NAME}:${TAG}"
+docker pull "${IMAGE_NAME}:${TAG}" || echo "Nao baixou do Docker Hub; tentando usar imagem local."
+
+step "3/7 Criando repositorio ECR '${ECR_REPO}'"
+aws_cmd ecr create-repository --repository-name "$ECR_REPO" 2>/dev/null && echo "Criado." || echo "Ja existe (ok)."
+
+step "4/7 Publicando a imagem no ECR do LocalStack (${ECR_IMAGE})"
+docker tag "${IMAGE_NAME}:${TAG}" "$ECR_IMAGE"
+docker push "$ECR_IMAGE"
+
+step "5/7 Baixando a imagem de volta do ECR"
+docker pull "$ECR_IMAGE"
+aws_cmd ecr describe-images --repository-name "$ECR_REPO" || true
+
+step "6/7 Subindo os containers (SQL Server + API)"
+docker network create "$NETWORK" 2>/dev/null || true
+
+docker rm -f "$SQL_CONTAINER" 2>/dev/null || true
+docker run -d --name "$SQL_CONTAINER" --network "$NETWORK" \
+  -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=${SA_PASSWORD}" \
+  -p 1433:1433 \
+  mcr.microsoft.com/mssql/server:2022-latest >/dev/null
+
+echo "Aguardando o SQL Server..."
+ready=false
+for i in $(seq 1 30); do
+  if docker exec "$SQL_CONTAINER" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$SA_PASSWORD" -C -Q "SELECT 1" >/dev/null 2>&1; then
+    ready=true; break
+  fi
+  sleep 3
+done
+[ "$ready" = true ] || { echo "SQL Server nao ficou pronto."; exit 1; }
+echo "SQL Server pronto."
+
+docker rm -f "$API_CONTAINER" 2>/dev/null || true
+CONN="Server=${SQL_CONTAINER},1433;Database=FiapGameDb;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true"
+docker run -d --name "$API_CONTAINER" --network "$NETWORK" \
+  -p "${HOST_PORT}:${CONTAINER_PORT}" \
+  -e "ASPNETCORE_URLS=http://+:${CONTAINER_PORT}" \
+  -e "ConnectionStrings__Default=${CONN}" \
+  --health-cmd "curl -f http://localhost:${CONTAINER_PORT}/health || exit 1" \
+  --health-interval=10s --health-retries=5 --health-start-period=20s \
+  "$ECR_IMAGE" >/dev/null
+
+step "7/7 Smoke test em http://localhost:${HOST_PORT}/health"
+ok=false
+for i in $(seq 1 20); do
+  sleep 3
+  if curl -fs "http://localhost:${HOST_PORT}/health" | grep -q "Healthy"; then ok=true; break; fi
+done
+
+if [ "$ok" = true ]; then
+  echo -e "\nDEPLOY OK! API em http://localhost:${HOST_PORT}"
+  echo "Swagger: http://localhost:${HOST_PORT}/swagger"
+else
+  echo -e "\nA API nao respondeu. Logs:"; docker logs --tail 40 "$API_CONTAINER"; exit 1
+fi
