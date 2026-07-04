@@ -14,9 +14,7 @@ env:
   IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/fiapcloudgames
 
 jobs:
-  # ===========================================================================
-  # 1) CI: compila, roda testes, analisa no SonarCloud e gera o artefato
-  # ===========================================================================
+  # CI: build, testes, SonarCloud e artefato
   build-test-sonar:
     name: CI - Build, Testes e SonarCloud
     runs-on: ubuntu-latest
@@ -24,8 +22,7 @@ jobs:
       - name: Checkout do código
         uses: actions/checkout@v4
         with:
-          # O SonarCloud precisa do histórico completo para analisar PRs/branches
-          fetch-depth: 0
+          fetch-depth: 0   # SonarCloud precisa do histórico completo
 
       - name: Configurar .NET ${{ env.DOTNET_VERSION }}
         uses: actions/setup-dotnet@v4
@@ -96,9 +93,7 @@ jobs:
           path: ./TestResults
           retention-days: 7
 
-  # ===========================================================================
-  # 2) Build e push da imagem no Docker Hub
-  # ===========================================================================
+  # Build e push da imagem no Docker Hub
   docker-publish:
     name: Build e Push no Docker Hub
     runs-on: ubuntu-latest
@@ -136,9 +131,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ===========================================================================
-  # 3) CD: deploy no LocalStack (via self-hosted runner)
-  # ===========================================================================
+  # CD: deploy no LocalStack (self-hosted runner)
   deploy-localstack:
     name: CD - Deploy no LocalStack
     runs-on: [self-hosted]

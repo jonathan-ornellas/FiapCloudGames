@@ -1,18 +1,12 @@
-# Sobe o LocalStack (edicao Community, gratuita) para usar nos testes do deploy.
-# Uso:  docker compose -f deploy/docker-compose.localstack.yml up -d
-#       docker compose -f deploy/docker-compose.localstack.yml down
-#
-# IMPORTANTE: usamos a tag 3.8.1 (fixa) de proposito.
-# A partir da versao 2026.3.0, a imagem :latest passou a EXIGIR um
-# LOCALSTACK_AUTH_TOKEN mesmo para recursos gratuitos (erro "License
-# activation failed", exit code 55). A 3.8.1 e a ultima linha Community
-# que roda 100% gratis e sem token, e ja tem ECR/S3 que o projeto usa.
+# LocalStack Community para os testes de deploy.
+# Uso: docker compose -f deploy/docker-compose.localstack.yml up -d
+# Tag 3.8.1 fixa: a partir da 2026.3.0 a :latest passou a exigir auth token.
 services:
   localstack:
     container_name: localstack
     image: localstack/localstack:3.8.1
     ports:
-      - "4566:4566"            # endpoint único de todos os serviços AWS
+      - "4566:4566"
     environment:
       - SERVICES=ecr,s3,cloudformation,lambda
       - DEBUG=1
