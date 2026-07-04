@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
-#
-# Deploy da API Fiap Cloud Games no LocalStack (ECR local) + SQL Server.
+# Deploy da API no LocalStack (ECR local) + SQL Server, com smoke test em /health.
 # Uso: ./deploy/deploy-localstack.sh <imagem> <tag>
-# Ex.: ./deploy/deploy-localstack.sh seuusuario/fiapcloudgames latest
-#
 set -euo pipefail
 
 IMAGE_NAME="${1:-fiapcloudgames}"
@@ -21,6 +18,7 @@ SA_PASSWORD="Your_password123"
 HOST_PORT=8080
 CONTAINER_PORT=8080
 
+# Credenciais fake exigidas pela AWS CLI (LocalStack aceita qualquer valor).
 export AWS_ACCESS_KEY_ID=test
 export AWS_SECRET_ACCESS_KEY=test
 export AWS_DEFAULT_REGION="$REGION"
@@ -34,17 +32,17 @@ aws_cmd() {
 
 step "1/7 Verificando o LocalStack"
 if ! curl -fs "${LOCALSTACK_URL}/_localstack/health" >/dev/null; then
-  echo "LocalStack nao respondeu em ${LOCALSTACK_URL}. Inicie com 'localstack start -d'."; exit 1
+  echo "LocalStack nao respondeu em ${LOCALSTACK_URL}. Suba com 'docker compose -f deploy/docker-compose.localstack.yml up -d'."; exit 1
 fi
 echo "LocalStack OK."
 
 step "2/7 Baixando a imagem ${IMAGE_NAME}:${TAG}"
-docker pull "${IMAGE_NAME}:${TAG}" || echo "Nao baixou do Docker Hub; tentando usar imagem local."
+docker pull "${IMAGE_NAME}:${TAG}" || echo "Nao baixou do Docker Hub; tentando imagem local."
 
 step "3/7 Criando repositorio ECR '${ECR_REPO}'"
 aws_cmd ecr create-repository --repository-name "$ECR_REPO" 2>/dev/null && echo "Criado." || echo "Ja existe (ok)."
 
-step "4/7 Publicando a imagem no ECR do LocalStack (${ECR_IMAGE})"
+step "4/7 Publicando a imagem no ECR (${ECR_IMAGE})"
 docker tag "${IMAGE_NAME}:${TAG}" "$ECR_IMAGE"
 docker push "$ECR_IMAGE"
 
