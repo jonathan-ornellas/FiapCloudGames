@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
-# Deploy da API no LocalStack (ECR local) + SQL Server, com smoke test em /health.
+# Deploy da API no LocalStack: publica o artefato (imagem) no S3 e sobe o
+# container + SQL Server, com smoke test em /health.
 # Uso: ./deploy/deploy-localstack.sh <imagem> <tag>
 set -euo pipefail
 
 IMAGE_NAME="${1:-fiapcloudgames}"
 TAG="${2:-latest}"
+IMAGE="${IMAGE_NAME}:${TAG}"
 
 REGION="us-east-1"
-ECR_REPO="fiapcloudgames"
+BUCKET="fiapcloudgames-artifacts"
+ARTIFACT_FILE="fiapcloudgames-${TAG}.tar"
 LOCALSTACK_URL="http://localhost:4566"
-ECR_REGISTRY="localhost:4566"
-ECR_IMAGE="${ECR_REGISTRY}/${ECR_REPO}:${TAG}"
 NETWORK="fiap-net"
 SQL_CONTAINER="fiap-sqlserver"
 API_CONTAINER="fiap-api"
@@ -30,27 +31,26 @@ aws_cmd() {
   else aws --endpoint-url "$LOCALSTACK_URL" "$@"; fi
 }
 
-step "1/7 Verificando o LocalStack"
+step "1/6 Verificando o LocalStack"
 if ! curl -fs "${LOCALSTACK_URL}/_localstack/health" >/dev/null; then
   echo "LocalStack nao respondeu em ${LOCALSTACK_URL}. Suba com 'docker compose -f deploy/docker-compose.localstack.yml up -d'."; exit 1
 fi
 echo "LocalStack OK."
 
-step "2/7 Baixando a imagem ${IMAGE_NAME}:${TAG}"
-docker pull "${IMAGE_NAME}:${TAG}" || echo "Nao baixou do Docker Hub; tentando imagem local."
+step "2/6 Baixando a imagem ${IMAGE}"
+docker pull "$IMAGE" || echo "Nao baixou do Docker Hub; tentando imagem local."
 
-step "3/7 Criando repositorio ECR '${ECR_REPO}'"
-aws_cmd ecr create-repository --repository-name "$ECR_REPO" 2>/dev/null && echo "Criado." || echo "Ja existe (ok)."
+step "3/6 Publicando o artefato no S3 (bucket '${BUCKET}')"
+aws_cmd s3 mb "s3://${BUCKET}" 2>/dev/null || true
+docker save "$IMAGE" -o "$ARTIFACT_FILE"
+aws_cmd s3 cp "$ARTIFACT_FILE" "s3://${BUCKET}/${ARTIFACT_FILE}"
+rm -f "$ARTIFACT_FILE"
+echo "Artefato publicado em s3://${BUCKET}/${ARTIFACT_FILE}"
 
-step "4/7 Publicando a imagem no ECR (${ECR_IMAGE})"
-docker tag "${IMAGE_NAME}:${TAG}" "$ECR_IMAGE"
-docker push "$ECR_IMAGE"
+step "4/6 Conferindo o artefato no S3"
+aws_cmd s3 ls "s3://${BUCKET}/"
 
-step "5/7 Baixando a imagem de volta do ECR"
-docker pull "$ECR_IMAGE"
-aws_cmd ecr describe-images --repository-name "$ECR_REPO" || true
-
-step "6/7 Subindo os containers (SQL Server + API)"
+step "5/6 Subindo os containers (SQL Server + API)"
 docker network create "$NETWORK" 2>/dev/null || true
 
 docker rm -f "$SQL_CONTAINER" 2>/dev/null || true
@@ -78,9 +78,9 @@ docker run -d --name "$API_CONTAINER" --network "$NETWORK" \
   -e "ConnectionStrings__Default=${CONN}" \
   --health-cmd "curl -f http://localhost:${CONTAINER_PORT}/health || exit 1" \
   --health-interval=10s --health-retries=5 --health-start-period=20s \
-  "$ECR_IMAGE" >/dev/null
+  "$IMAGE" >/dev/null
 
-step "7/7 Smoke test em http://localhost:${HOST_PORT}/health"
+step "6/6 Smoke test em http://localhost:${HOST_PORT}/health"
 ok=false
 for i in $(seq 1 20); do
   sleep 3
