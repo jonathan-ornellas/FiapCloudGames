@@ -49,6 +49,7 @@ jobs:
         run: dotnet restore "${{ env.SOLUTION }}"
 
       - name: SonarCloud - Begin
+        continue-on-error: true   # nao quebra a esteira se o SonarCloud estiver instavel
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
@@ -71,6 +72,7 @@ jobs:
             --results-directory ./TestResults
 
       - name: SonarCloud - End
+        continue-on-error: true   # nao quebra a esteira se o SonarCloud estiver instavel
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: dotnet sonarscanner end /d:sonar.token="${SONAR_TOKEN}"
