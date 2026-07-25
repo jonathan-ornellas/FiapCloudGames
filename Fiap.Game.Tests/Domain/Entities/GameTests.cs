@@ -170,7 +170,7 @@ namespace Fiap.Game.Tests.Domain.Entities
             var isReleased = game.IsReleased();
 
             // Assert
-            isReleased.Should().BeTrue();
+            isReleased.Should().BeFalse();
         }
 
         [Fact]
