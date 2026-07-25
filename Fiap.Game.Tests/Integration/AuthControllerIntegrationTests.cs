@@ -76,6 +76,7 @@ namespace Fiap.Game.Tests.Integration
 
             var act = async () => await _authService.LoginAsync("test@example.com", "WrongPassword");
             await act.Should().ThrowAsync<UnauthorizedAccessException>();
+
         }
 
         [Fact]
