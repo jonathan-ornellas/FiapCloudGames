@@ -79,7 +79,7 @@ namespace Fiap.Game.Tests.Domain.ValueObjects
             var isValid = Email.IsValid(invalidEmail);
 
             // Assert
-            isValid.Should().BeTrue();
+            isValid.Should().BeFalse();
         }
 
         [Fact]
